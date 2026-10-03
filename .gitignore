@@ -1,0 +1,14 @@
+# 构建产物
+firmware/build/
+firmware/sdkconfig
+firmware/sdkconfig.old
+firmware/managed_components/
+firmware/dependencies.lock
+
+# 临时文件
+tools/_*.txt
+*.log
+~$*
+
+# IDE
+.vscode/ipch/

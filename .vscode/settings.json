@@ -1,0 +1,31 @@
+{
+  "files.exclude": {
+    "**/build": true,
+    "**/sdkconfig.old": true,
+    "**/.cache": true
+  },
+  "terminal.integrated.profiles.windows": {
+    "ESP-IDF Shell": {
+      "source": "PowerShell",
+      "icon": "chip",
+      "args": [
+        "-NoExit",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        ". 'E:\\esp\\esp-idf\\export.ps1'"
+      ]
+    },
+    "PowerShell": {
+      "source": "PowerShell"
+    }
+  },
+  "terminal.integrated.defaultProfile.windows": "ESP-IDF Shell",
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/firmware/build/compile_commands.json",
+  "C_Cpp.default.cStandard": "c17",
+  "C_Cpp.default.cppStandard": "c++17",
+  "C_Cpp.default.intelliSenseMode": "windows-gcc-x64",
+  "idf.monitorBaudRate": "115200",
+  "idf.flashBaudRate": "460800",
+  "idf.flashType": "UART"
+}

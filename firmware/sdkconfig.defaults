@@ -1,0 +1,33 @@
+# =============================================================
+# Spider8 sdkconfig 默认值（首次配置时生效，可用 menuconfig 覆盖）
+# 目标硬件：ESP32-S3-N16R8（16MB Flash + 8MB Octal PSRAM）
+# =============================================================
+
+# --- 目标芯片 ---
+CONFIG_IDF_TARGET="esp32s3"
+
+# --- CPU：240MHz 双核 ---
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+
+# --- Flash：16MB QIO @80MHz ---
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+
+# --- 自定义分区表（双 OTA + littlefs 动作库 + coredump）---
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# --- PSRAM：N16R8 为 8MB Octal @80MHz ---
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+
+# --- FreeRTOS：1kHz tick（步态引擎 20ms 插值周期需要精细延时）---
+CONFIG_FREERTOS_HZ=1000
+
+# --- 日志级别：INFO（调试时可改 DEBUG）---
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+
+# --- 编译优化：-Og，调试期保留断点体验（量产改 PERF）---
+CONFIG_COMPILER_OPTIMIZATION_DEBUG=y

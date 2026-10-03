@@ -1,0 +1,133 @@
+# Step 1 补充：在 VS Code 中开发（两条路线）
+
+> 日期：2026-10-02 ｜ 结论：**完全可以，VS Code 是 ESP-IDF 官方主推的 IDE**
+> 前置：先完成 `docs/03-环境搭建.md` 的 ESP-IDF 安装（装完 `E:\esp\esp-idf` 存在）
+
+---
+
+## 0. 一句话结论
+
+VS Code 用起来有两种方式，**不冲突，可随时切换**：
+
+| 路线 | 依赖 | 能力 | 推荐场景 |
+|---|---|---|---|
+| **A. 零扩展（已为你配好）** | 只用 VS Code 自带功能 | 编译/烧写/监视/菜单配置 一键按钮 + 终端 + 语法补全 | 立刻可用、不怕扩展版本变动 |
+| **B. 官方扩展（Espressif IDF）** | 需装扩展 | 图形化状态栏、串口选择、断点调试、芯片概览 | 想要可视化调试时再加装 |
+
+> 两者本质都是调用 `idf.py`，**路线 A 永远有效**，所以我先把它配好。
+
+---
+
+## 1. 路线 A：零扩展（已配置完成，推荐先用）
+
+### 1.1 已生成的文件
+
+```
+spider8/
+├── .vscode/
+│   ├── tasks.json              # 7 个一键任务（编译/烧写/监视/…）
+│   ├── settings.json           # 默认终端=已激活的 ESP-IDF Shell；隐藏 build 目录
+│   └── c_cpp_properties.json   # 语法补全指向 compile_commands.json
+└── tools/
+    └── idf.ps1                 # 环境包装器：自动激活 IDF 再转给 idf.py
+```
+
+### 1.2 使用方式
+
+1. VS Code → **文件 → 打开文件夹** → 选择 `C:\Users\aaron\WorkBuddy\spider8`
+2. 按 **`Ctrl + Shift + B`** → 编译（`idf.py build`）
+3. 按 **`Ctrl + Shift + P`** → 输入 `Run Task` → 选择：
+   - `ESP-IDF: 烧写 (flash)`（会弹窗问串口号，填 COM3 之类）
+   - `ESP-IDF: 串口监视 (monitor)`
+   - `ESP-IDF: 编译+烧写+监视 (一键)`
+   - `ESP-IDF: 设置目标芯片 (esp32s3)`
+   - `ESP-IDF: 菜单配置 (menuconfig)`
+   - `ESP-IDF: 全量清理 (fullclean)`
+4. 内置终端默认就是 **"ESP-IDF Shell"**（已自动激活环境），可直接敲 `idf.py build`、`idf.py -p COM3 flash monitor`
+
+> 串口号修改：`tasks.json` 顶部 `inputs` 里的 `"default": "COM3"` 改成你的实际串口；运行时弹窗输入的值只在本次生效。
+
+### 1.3 代码补全（IntelliSense）
+
+1. 装 VS Code 扩展 **C/C++**（`ms-vscode.cpptools`，微软官方，免费）
+2. 首次编译后 ESP-IDF 会生成 `firmware/build/compile_commands.json`
+3. `c_cpp_properties.json` 已指向它 → `#include "driver/ledc.h"` 等会有补全与跳转
+
+### 1.4 说明
+
+任务的工作目录是 `${workspaceFolder}/firmware`，**该目录在 M0-1 建立固件工程后才会出现**。在固件工程创建前点这些任务会提示目录不存在，属正常现象。
+
+---
+
+## 2. 路线 B：官方扩展 Espressif IDF
+
+### 2.1 安装与配置
+
+1. 扩展市场搜索 **Espressif IDF**（`espressif.esp-idf-extension`）→ 安装
+2. `Ctrl + Shift + P` → **ESP-IDF: Configure ESP-IDF Extension**
+3. 选择 **Use existing setup / EXISTING SETUP**（不要选 Install，否则会再下一份 2GB 的 IDF）
+4. 三个路径按下表填写：
+
+| 配置项 | 填写值 |
+|---|---|
+| ESP-IDF 目录 | `E:\esp\esp-idf` |
+| Tools 目录 | `E:\esp\.espressif` |
+| Python | `C:\Users\aaron\.workbuddy\binaries\python\versions\3.13.12\python.exe` |
+
+> ⚠️ **Python 千万别选 PATH 默认的 3.14.6**，超出 IDF 5.5 支持范围（3.9~3.13），会导致工具报错。
+
+5. 配置完成后底部状态栏出现：目标芯片选择 / 🔨 编译 / 🔥 烧写 / 📺 监视 / 🐞 调试
+
+### 2.2 版本差异提醒
+
+最新版扩展改用 **EIM（ESP-IDF Installation Manager）配置模型**（配置项为 `idf.currentSetup` / `idf.eimIdfJsonPath`），
+如果你的扩展向导里**找不到 "Use existing setup"**，说明它要求用 EIM 重新安装 IDF —— 这时：
+
+- **推荐**：直接用路线 A（功能完全够用），或
+- 在扩展里改用 **较稳定的 1.9.x 版本**（扩展页 → Install Another Version…）再配置现有安装
+
+### 2.3 断点调试（加分项）
+
+ESP32-S3 自带 **USB-Serial/JTAG**，只需一根 USB 线即可硬件断点调试（无需额外调试器）：
+- 扩展 → `Ctrl+Shift+P` → **ESP-IDF: OpenOCD Manager** 启动 → 侧栏 Run and Debug → 选 ESP-IDF 配置
+- 注意：调试会占用 USB 口，此时串口监视需改用第二个 UART 或虚拟串口
+
+---
+
+## 3. 推荐工作流（我们俩配合）
+
+```
+我（AI）：写 / 改固件代码，保证逻辑与结构正确
+   ↓
+你（VS Code）：Ctrl+Shift+B 编译 → Run Task 烧写 → 监视窗口看日志
+   ↓
+把日志 / 现象贴回给我 → 我定位问题 → 下一小步
+```
+
+烧写和接线必须由你操作（我碰不到硬件）；编译可以在你机器上随时验证。
+
+---
+
+## 4. 排错表
+
+| 现象 | 原因 | 解决 |
+|---|---|---|
+| 终端提示 `idf.py 不是内部或外部命令` | 终端不是 ESP-IDF Shell | VS Code 右下角 `+` 号旁下拉选 **ESP-IDF Shell**；或直接用任务按钮 |
+| 任务报 `cwd 不存在` | 还没建固件工程 | 等 M0-1 创建 `firmware/` 后再用 |
+| 扩展报 `ESP-IDF Path invalid` | 路径填错 / 填了 tools 目录 | IDF 目录填 `E:\esp\esp-idf`（含 `export.ps1` 的那层） |
+| 扩展里 Python 列表里只有 3.14 | 未手动指定 | 手动浏览选择 `...\3.13.12\python.exe` |
+| `Monitor` 启动失败 `/dev/ttyUSB0 拒绝访问` | 串口被其它程序占用 | 关掉其它串口助手 / 关闭上一个 monitor 任务 |
+| 烧写一直 `Connecting....` | 未进下载模式 / 串口选错 | 按住 **BOOT** 键 → 点 **RST** → 松开 BOOT；确认串口号 |
+| 编译报错但代码看着没问题 | 增量缓存脏了 | Run Task → `ESP-IDF: 全量清理 (fullclean)` 后重新编译 |
+| 打开 vs 关闭 VS Code 后补全失效 | 未编译，缺 compile_commands.json | 先编译一次 |
+
+---
+
+## 5. 本步验收标准
+
+- [ ] 打开 `spider8` 文件夹，内置终端显示 `(esp-idf)` 前缀
+- [ ] `Ctrl+Shift+B` 能触发编译任务（无固件工程时提示目录不存在也算链路通）
+- [ ] `Ctrl+Shift+P → Run Task` 能看到 7 个 `ESP-IDF:` 任务
+- [ ] C/C++ 扩展已装（补全在 M0-1 编译后生效）
+
+> 完成后再进入 **M0-1：建立固件工程骨架 + 编译烧写 hello_world，打通电脑↔开发板链路**。

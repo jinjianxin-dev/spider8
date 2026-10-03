@@ -1,0 +1,11 @@
+﻿# Spider8 16MB Flash 分区表（ESP32-S3-N16R8）
+# 布局：双 OTA 应用槽（支持后续 OTA 升级）+ littlefs（动作库 JSON）+ coredump（崩溃分析）
+# 总计 16MB = 0x1000000
+# Name,      Type, SubType,  Offset,   Size,     Flags
+nvs,         data, nvs,      0x9000,   0x6000,
+phy_init,    data, phy,      0xf000,   0x1000,
+otadata,     data, ota,      0x10000,  0x2000,
+ota_0,       app,  ota_0,    0x20000,  0x300000,
+ota_1,       app,  ota_1,    0x320000, 0x300000,
+littlefs,    data, spiffs,   0x620000, 0x9D0000,
+coredump,    data, coredump, 0xFF0000, 0x10000,
