@@ -23,7 +23,7 @@ param(
     [string[]]$IdfArgs
 )
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 
 # ---------------------------------------------------------------- 定位 ESP-IDF
 $IdfPath   = if ($env:IDF_PATH)       { $env:IDF_PATH }       else { "E:\esp\esp-idf" }
@@ -44,9 +44,22 @@ if (-not (Test-Path $ExportScript)) {
 }
 
 # ---------------------------------------------------------------- 激活环境
-# 必须用点源(.)，否则 export.ps1 里定义的 idf.py 函数不会留在当前作用域
 $env:IDF_PATH       = $IdfPath
 $env:IDF_TOOLS_PATH = $ToolsPath
+
+# 关键：把 IDF 自带的 python venv（3.13）提到 PATH 最前，
+# 否则 export.ps1 会用系统 PATH 里的 python（本机 3.14.6，超出版本支持）而失败
+$venvPython = Get-ChildItem -Path (Join-Path $ToolsPath "python_env\*\Scripts\python.exe") `
+              -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($null -ne $venvPython) {
+    $env:PATH = (Split-Path $venvPython.FullName) + ";" + $env:PATH
+    Write-Host "    使用 IDF venv Python: $($venvPython.FullName)" -ForegroundColor DarkGray
+} else {
+    Write-Host "[!!] 未找到 IDF python_env（$ToolsPath\python_env），将使用系统 Python" -ForegroundColor Yellow
+}
+
+# 点源激活（必须用 . 前缀，否则 export.ps1 定义的 idf.py 函数不会留在当前作用域）
+# PS 5.1 会把子进程 stderr 输出误判为终止错误，故此处不能设 ErrorActionPreference=Stop
 . $ExportScript | Out-Null
 
 # ---------------------------------------------------------------- 组装参数
