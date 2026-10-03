@@ -12,17 +12,14 @@
     {
       "label": "ESP-IDF: 编译 (build)",
       "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}\\tools\\idf.ps1",
-        "build"
-      ],
+      "command": "${workspaceFolder}\\tools\\idf.ps1",
+      "args": ["build"],
       "options": {
-        "cwd": "${workspaceFolder}/firmware"
+        "cwd": "${workspaceFolder}/firmware",
+        "shell": {
+          "executable": "powershell.exe",
+          "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"]
+        }
       },
       "group": {
         "kind": "build",
@@ -33,153 +30,134 @@
         "echo": true,
         "reveal": "always",
         "panel": "dedicated",
-        "clear": true
+        "clear": true,
+        "showReuseMessage": false
       }
     },
     {
       "label": "ESP-IDF: 烧写 (flash)",
       "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}\\tools\\idf.ps1",
-        "-Port",
-        "${input:serialPort}",
-        "flash"
-      ],
+      "command": "${workspaceFolder}\\tools\\idf.ps1",
+      "args": ["-Port", "${input:serialPort}", "flash"],
       "options": {
-        "cwd": "${workspaceFolder}/firmware"
+        "cwd": "${workspaceFolder}/firmware",
+        "shell": {
+          "executable": "powershell.exe",
+          "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"]
+        }
       },
       "problemMatcher": [],
       "presentation": {
         "echo": true,
         "reveal": "always",
         "panel": "dedicated",
-        "clear": true
+        "clear": true,
+        "showReuseMessage": false
       }
     },
     {
       "label": "ESP-IDF: 串口监视 (monitor)",
       "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}\\tools\\idf.ps1",
-        "-Port",
-        "${input:serialPort}",
-        "monitor"
-      ],
+      "command": "${workspaceFolder}\\tools\\idf.ps1",
+      "args": ["-Port", "${input:serialPort}", "monitor"],
       "options": {
-        "cwd": "${workspaceFolder}/firmware"
+        "cwd": "${workspaceFolder}/firmware",
+        "shell": {
+          "executable": "powershell.exe",
+          "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"]
+        }
       },
       "problemMatcher": [],
       "presentation": {
         "echo": true,
         "reveal": "always",
         "panel": "dedicated",
-        "clear": true
+        "clear": true,
+        "showReuseMessage": false
       }
     },
     {
       "label": "ESP-IDF: 编译+烧写+监视 (一键)",
       "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}\\tools\\idf.ps1",
-        "-Port",
-        "${input:serialPort}",
-        "flash",
-        "monitor"
-      ],
+      "command": "${workspaceFolder}\\tools\\idf.ps1",
+      "args": ["-Port", "${input:serialPort}", "flash", "monitor"],
       "options": {
-        "cwd": "${workspaceFolder}/firmware"
+        "cwd": "${workspaceFolder}/firmware",
+        "shell": {
+          "executable": "powershell.exe",
+          "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"]
+        }
       },
       "problemMatcher": [],
       "presentation": {
         "echo": true,
         "reveal": "always",
         "panel": "dedicated",
-        "clear": true
+        "clear": true,
+        "showReuseMessage": false
       }
     },
     {
       "label": "ESP-IDF: 设置目标芯片 (esp32s3)",
       "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}\\tools\\idf.ps1",
-        "set-target",
-        "esp32s3"
-      ],
+      "command": "${workspaceFolder}\\tools\\idf.ps1",
+      "args": ["set-target", "esp32s3"],
       "options": {
-        "cwd": "${workspaceFolder}/firmware"
+        "cwd": "${workspaceFolder}/firmware",
+        "shell": {
+          "executable": "powershell.exe",
+          "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"]
+        }
       },
       "problemMatcher": [],
       "presentation": {
         "echo": true,
         "reveal": "always",
         "panel": "dedicated",
-        "clear": true
+        "clear": true,
+        "showReuseMessage": false
       }
     },
     {
       "label": "ESP-IDF: 菜单配置 (menuconfig)",
       "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}\\tools\\idf.ps1",
-        "menuconfig"
-      ],
+      "command": "${workspaceFolder}\\tools\\idf.ps1",
+      "args": ["menuconfig"],
       "options": {
-        "cwd": "${workspaceFolder}/firmware"
+        "cwd": "${workspaceFolder}/firmware",
+        "shell": {
+          "executable": "powershell.exe",
+          "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"]
+        }
       },
       "problemMatcher": [],
       "presentation": {
         "echo": true,
         "reveal": "always",
         "panel": "dedicated",
-        "clear": true
+        "clear": true,
+        "showReuseMessage": false
       }
     },
     {
       "label": "ESP-IDF: 全量清理 (fullclean)",
       "type": "shell",
-      "command": "powershell",
-      "args": [
-        "-NoProfile",
-        "-ExecutionPolicy",
-        "Bypass",
-        "-File",
-        "${workspaceFolder}\\tools\\idf.ps1",
-        "fullclean"
-      ],
+      "command": "${workspaceFolder}\\tools\\idf.ps1",
+      "args": ["fullclean"],
       "options": {
-        "cwd": "${workspaceFolder}/firmware"
+        "cwd": "${workspaceFolder}/firmware",
+        "shell": {
+          "executable": "powershell.exe",
+          "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"]
+        }
       },
       "problemMatcher": [],
       "presentation": {
         "echo": true,
         "reveal": "always",
         "panel": "dedicated",
-        "clear": true
+        "clear": true,
+        "showReuseMessage": false
       }
     }
   ]

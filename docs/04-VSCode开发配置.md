@@ -25,11 +25,12 @@ VS Code 用起来有两种方式，**不冲突，可随时切换**：
 ```
 spider8/
 ├── .vscode/
-│   ├── tasks.json              # 7 个一键任务（编译/烧写/监视/…）
-│   ├── settings.json           # 默认终端=已激活的 ESP-IDF Shell；隐藏 build 目录
+│   ├── tasks.json              # 7 个一键任务（每个任务自带 options.shell，不受默认终端影响）
+│   ├── settings.json           # 默认终端=ESP-IDF Shell；隐藏 build 目录
 │   └── c_cpp_properties.json   # 语法补全指向 compile_commands.json
 └── tools/
-    └── idf.ps1                 # 环境包装器：自动激活 IDF 再转给 idf.py
+    ├── idf.ps1                 # 【任务用】环境包装器：激活 IDF 后转发给 idf.py
+    └── idf_shell.ps1           # 【终端用】激活后保持会话，供 ESP-IDF Shell 终端启动
 ```
 
 ### 1.2 使用方式
@@ -43,7 +44,9 @@ spider8/
    - `ESP-IDF: 设置目标芯片 (esp32s3)`
    - `ESP-IDF: 菜单配置 (menuconfig)`
    - `ESP-IDF: 全量清理 (fullclean)`
-4. 内置终端默认就是 **"ESP-IDF Shell"**（已自动激活环境），可直接敲 `idf.py build`、`idf.py -p COM7 flash monitor`
+4. 内置终端默认就是 **"ESP-IDF Shell"**（启动即激活环境，可直接敲 `idf.py build`、`idf.py -p COM7 flash monitor`）
+   - 若想用干净的原生 PowerShell：终端面板右上角 `+` 旁边的下拉箭头 → 选 **PowerShell**
+   - 注意：ESP-IDF Shell 带 `-NoExit`（激活后保持会话），所以**别用它来跑任务**（见 §4.2，任务已自带独立 shell，不受影响）
 
 > 串口号修改：`tasks.json` 顶部 `inputs` 里的 `"default"` 改成你的实际串口；运行时弹窗输入的值只在本次生效。
 
@@ -112,7 +115,8 @@ ESP32-S3 自带 **USB-Serial/JTAG**，只需一根 USB 线即可硬件断点调�
 
 | 现象 | 原因 | 解决 |
 |---|---|---|
-| **`Python virtual environment "...idf5.5_py3.14_env\Scripts\python.exe" not found`** | PATH 首选的 `python` 是 3.14，而 IDF 的 `activate.py` 会用「当前 python 的版本号」去拼 venv 目录名（`idf5.5_py3.13_env` 才对） | `tools/idf.ps1` 已**硬绑定 `IDF_PYTHON_ENV_PATH`** 修复，重跑任务即可；若仍报错，先确认 `E:\esp\.espressif\python_env\idf5.5_py3.13_env` 存在 |
+| **任务一直显示"正在执行"、永不结束** | 默认终端 profile（ESP-IDF Shell）带 `-NoExit`，且 profile 的 `-Command` 会把任务命令行吞成它自己的参数，任务是空转的 | `tasks.json` 每个任务已用 `options.shell` 显式指定干净 shell（见 §4.2）；对已经卡住的任务，点终端标签上的 **🗑 结束终端** 图标即可 |
+| **`Python virtual environment "...idf5.5_py3.14_env\Scripts\python.exe" not found`** | PATH 首选的 `python` 是 3.14，而 IDF 的 `activate.py` 会用「当前 python 的版本号」去拼 venv 目录名（`idf5.5_py3.13_env` 才对） | 终端启动脚本 `tools/idf_shell.ps1` 与任务包装器 `tools/idf.ps1` 都已**硬绑定 `IDF_PYTHON_ENV_PATH`**；若仍报错，确认 `E:\esp\.espressif\python_env\idf5.5_py3.13_env` 存在 |
 | 同一个错误跟着 `. $idf_exports` / `表达式生成无效的对象` | 上一条的连带后果：`activate.py` 失败 → `$idf_exports` 为空 → 点源空字符串报错 | 同上，根因是 venv 没找到，不是 PowerShell 语法问题 |
 | 监视窗口中文显示成 `??????` 或乱码 | Windows 控制台代码页 936(GBK)，而固件日志是 UTF-8 | 监视任务已自动切 `chcp 65001`；若仍乱码，把 VS Code 终端编码设为 UTF-8 |
 | 终端提示 `idf.py 不是内部或外部命令` | 终端不是 ESP-IDF Shell | VS Code 右下角 `+` 号旁下拉选 **ESP-IDF Shell**；或直接用任务按钮 |
@@ -155,6 +159,76 @@ tools/idf.ps1
 > E:\esp\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe E:\esp\esp-idf\tools\activate.py --export
 > ```
 > 能直接跑通说明 venv 本身没问题，问题在"谁来调它"。
+
+---
+
+## 4.2 深挖：任务"永远在执行中"的根因（2026-10-03 实修）
+
+### 现象
+
+点 `ESP-IDF: 烧写 (flash)` 后，终端里报 venv 找不到，而且**任务一直卡在"正在执行"**，永不结束。
+
+### 根因（两个 bug 叠在一起）
+
+`settings.json` 里我把 **"ESP-IDF Shell" 设成了默认终端**，而它的 args 带 `-NoExit` 和一个 `-Command`：
+
+```
+powershell -NoExit -ExecutionPolicy Bypass -Command ". 'E:\esp\esp-idf\export.ps1'"
+```
+
+VS Code 跑 shell 任务时，若没有单独指定 shell，会**用默认 profile**，并把任务命令**追加到 profile 参数后面**。于是真实进程命令行变成：
+
+```
+powershell.exe -NoExit -ExecutionPolicy Bypass -Command . 'E:\esp\esp-idf\export.ps1'
+        -Command powershell -NoProfile -ExecutionPolicy Bypass -File ...\idf.ps1 -Port COM7 flash
+                                                     ↑ 这串被当成 export.ps1 的参数吃掉了
+```
+
+后果有两个，正好对应两个现象：
+
+1. **报错**：真正执行的其实是 profile 里那句裸 `. export.ps1` —— 环境里没有 `IDF_TOOLS_PATH`、`python` 又是 3.14，于是它去找 `C:\Users\aaron\.espressif\python_env\idf5.5_py3.14_env` → `not found`。**跟 `idf.ps1` 无关。**
+2. **不结束**：`-NoExit` 让这个 shell 永不退出 → VS Code 判定任务"仍在执行中"。
+
+> 所以：**带 `-NoExit` 的终端 profile 不能用来跑任务**。
+
+### 修复
+
+1. **任务自带 shell**：`tasks.json` 里每个任务都加了 `options.shell`，显式指定干净 shell，
+   并且 `command` 直接就是脚本路径，不再套一层 powershell：
+
+   ```json
+   "command": "${workspaceFolder}\\tools\\idf.ps1",
+   "args": ["-Port", "${input:serialPort}", "flash"],
+   "options": {
+     "cwd": "${workspaceFolder}/firmware",
+     "shell": { "executable": "powershell.exe",
+                "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File"] }
+   }
+   ```
+
+   → 实际执行 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File <idf.ps1> -Port COM7 flash`，
+   进程跑完即退出，**与默认终端 profile 完全解耦**。
+
+2. **终端 profile 换成专用脚本**：`ESP-IDF Shell` 改为调用 `tools/idf_shell.ps1`（先钉死环境再激活），
+   这样手动开终端也不会再报 `py3.14` 错。该脚本用 `return` 而不是 `exit`，避免把终端一起关掉。
+
+3. **去掉"按键关闭终端"提示**：所有任务加 `"presentation": { "showReuseMessage": false }`。
+
+### 已卡住的任务怎么清掉
+
+任选其一：
+- 点该终端标签右侧的 **🗑（结束终端 / Kill Terminal）** 图标
+- 或 `Ctrl+Shift+P` → **Tasks: Terminate Task** → 选 `ESP-IDF: 烧写 (flash)`
+- 或直接关掉那个终端面板（`Ctrl+Shift+W` 或点 `×`）
+
+### 验证结果
+
+| 验证项 | 命令 | 结果 |
+|---|---|---|
+| 终端 profile 路径 | `powershell -NoExit -Command ". 'tools\\idf_shell.ps1'; exit"` | `[OK] ESP-IDF 环境已就绪：ESP-IDF v5.5.5-dirty`，退出码 0 |
+| 任务实际命令行 | `powershell -NoProfile -ExecutionPolicy Bypass -File tools\\idf.ps1 build`（cwd=firmware） | `Project build complete`，22.8 秒后**自行退出**（退出码 0） |
+
+---
 
 ---
 

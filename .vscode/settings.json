@@ -13,7 +13,7 @@
         "-ExecutionPolicy",
         "Bypass",
         "-Command",
-        ". 'E:\\esp\\esp-idf\\export.ps1'"
+        ". 'C:\\Users\\aaron\\WorkBuddy\\spider8\\tools\\idf_shell.ps1'"
       ]
     },
     "PowerShell": {
