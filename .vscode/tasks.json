@@ -4,8 +4,8 @@
     {
       "id": "serialPort",
       "type": "promptString",
-      "description": "ESP32-S3 串口号（设备管理器 → 端口，如 COM3）",
-      "default": "COM3"
+      "description": "ESP32-S3 串口号（设备管理器 → 端口，如 COM7）",
+      "default": "COM7"
     }
   ],
   "tasks": [

@@ -37,15 +37,15 @@ spider8/
 1. VS Code → **文件 → 打开文件夹** → 选择 `C:\Users\aaron\WorkBuddy\spider8`
 2. 按 **`Ctrl + Shift + B`** → 编译（`idf.py build`）
 3. 按 **`Ctrl + Shift + P`** → 输入 `Run Task` → 选择：
-   - `ESP-IDF: 烧写 (flash)`（会弹窗问串口号，填 COM3 之类）
+   - `ESP-IDF: 烧写 (flash)`（会弹窗问串口号，**默认已填 `COM7`**，回车即可）
    - `ESP-IDF: 串口监视 (monitor)`
    - `ESP-IDF: 编译+烧写+监视 (一键)`
    - `ESP-IDF: 设置目标芯片 (esp32s3)`
    - `ESP-IDF: 菜单配置 (menuconfig)`
    - `ESP-IDF: 全量清理 (fullclean)`
-4. 内置终端默认就是 **"ESP-IDF Shell"**（已自动激活环境），可直接敲 `idf.py build`、`idf.py -p COM3 flash monitor`
+4. 内置终端默认就是 **"ESP-IDF Shell"**（已自动激活环境），可直接敲 `idf.py build`、`idf.py -p COM7 flash monitor`
 
-> 串口号修改：`tasks.json` 顶部 `inputs` 里的 `"default": "COM3"` 改成你的实际串口；运行时弹窗输入的值只在本次生效。
+> 串口号修改：`tasks.json` 顶部 `inputs` 里的 `"default"` 改成你的实际串口；运行时弹窗输入的值只在本次生效。
 
 ### 1.3 代码补全（IntelliSense）
 
@@ -112,6 +112,9 @@ ESP32-S3 自带 **USB-Serial/JTAG**，只需一根 USB 线即可硬件断点调�
 
 | 现象 | 原因 | 解决 |
 |---|---|---|
+| **`Python virtual environment "...idf5.5_py3.14_env\Scripts\python.exe" not found`** | PATH 首选的 `python` 是 3.14，而 IDF 的 `activate.py` 会用「当前 python 的版本号」去拼 venv 目录名（`idf5.5_py3.13_env` 才对） | `tools/idf.ps1` 已**硬绑定 `IDF_PYTHON_ENV_PATH`** 修复，重跑任务即可；若仍报错，先确认 `E:\esp\.espressif\python_env\idf5.5_py3.13_env` 存在 |
+| 同一个错误跟着 `. $idf_exports` / `表达式生成无效的对象` | 上一条的连带后果：`activate.py` 失败 → `$idf_exports` 为空 → 点源空字符串报错 | 同上，根因是 venv 没找到，不是 PowerShell 语法问题 |
+| 监视窗口中文显示成 `??????` 或乱码 | Windows 控制台代码页 936(GBK)，而固件日志是 UTF-8 | 监视任务已自动切 `chcp 65001`；若仍乱码，把 VS Code 终端编码设为 UTF-8 |
 | 终端提示 `idf.py 不是内部或外部命令` | 终端不是 ESP-IDF Shell | VS Code 右下角 `+` 号旁下拉选 **ESP-IDF Shell**；或直接用任务按钮 |
 | 任务报 `cwd 不存在` | 还没建固件工程 | 等 M0-1 创建 `firmware/` 后再用 |
 | 扩展报 `ESP-IDF Path invalid` | 路径填错 / 填了 tools 目录 | IDF 目录填 `E:\esp\esp-idf`（含 `export.ps1` 的那层） |
@@ -120,6 +123,38 @@ ESP32-S3 自带 **USB-Serial/JTAG**，只需一根 USB 线即可硬件断点调�
 | 烧写一直 `Connecting....` | 未进下载模式 / 串口选错 | 按住 **BOOT** 键 → 点 **RST** → 松开 BOOT；确认串口号 |
 | 编译报错但代码看着没问题 | 增量缓存脏了 | Run Task → `ESP-IDF: 全量清理 (fullclean)` 后重新编译 |
 | 打开 vs 关闭 VS Code 后补全失效 | 未编译，缺 compile_commands.json | 先编译一次 |
+
+---
+
+## 4.1 深挖：`py3.14_env not found` 的完整根因（2026-10-03 实修）
+
+这是本项目踩过最隐蔽的坑，记录原理避免复发：
+
+```
+tools/idf.ps1
+   └─ . E:\esp\esp-idf\export.ps1
+          └─ $idf_exports = python "tools/activate.py" --export     ← 这里用的是 PATH 里的 python
+                 └─ activate.py
+                        └─ idf_tools.get_python_env_path()
+                               venv路径 = IDF_PYTHON_ENV_PATH ?? <ToolsPath>/python_env/idf<版本>_py<当前python主.次>_env
+                                                                                        ↑ 关键：跟着"当前 python"走
+```
+
+本机 `PATH` 首选 python 是 **3.14.6**（`C:\Users\aaron\AppData\Local\Python\bin\python.exe`），
+于是 IDF 去拼 `idf5.5_py3.14_env` —— 而实际只装了 `idf5.5_py3.13_env` → 找不到 → 报错。
+
+**修复方式**（已写进 `tools/idf.ps1`，双保险）：
+
+1. **硬绑定**：扫描 `E:\esp\.espressif\python_env\idf*_env`，把找到的目录直接赋给 `$env:IDF_PYTHON_ENV_PATH`
+   （`idf_tools.py` 对该变量**最高优先级**，见 `get_python_env_path()`）
+2. **PATH 前置**：把 venv 里的 `python.exe` 目录插到 `PATH` 最前，保证后续 `check-python-dependencies`、`idf.py` 都跑在 venv 内
+3. **找不到就明确报错**，不再"静悄悄退化成系统 python"导致后面一堆玄学错误
+
+> 排查同类问题的万能命令：
+> ```powershell
+> E:\esp\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe E:\esp\esp-idf\tools\activate.py --export
+> ```
+> 能直接跑通说明 venv 本身没问题，问题在"谁来调它"。
 
 ---
 

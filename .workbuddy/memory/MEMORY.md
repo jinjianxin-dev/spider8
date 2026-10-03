@@ -6,10 +6,12 @@
 
 ## 关键路径与环境约定
 - 工程根目录：`C:\Users\aaron\WorkBuddy\spider8`
-- ESP-IDF 安装位置：`E:\esp\esp-idf`，工具链 `E:\esp\.espressif`（C/D 盘空间紧张，不要装 C 盘）
-- ESP-IDF 版本：v5.5.5（Gitee 镜像克隆，因 github 慢）
-- 开发用 Python：3.13.12（`C:\Users\aaron\.workbuddy\binaries\python\versions\3.13.12\`）；PATH 默认的 3.14.6 超出 IDF 支持范围
-- 文档编号规则：`docs/0N-<主题>.md`（01 需求分析、02 设计方案、03 环境搭建 …）
+- ESP-IDF 安装位置：`E:\esp\esp-idf`（v5.5.5，子模块已全部修复），工具链 `E:\esp\.espressif`
+- ESP-IDF 开发用 Python：必须用 venv `E:\esp\.espressif\python_env\idf5.5_py3.13_env`（PATH 里系统 python 3.14.6 不可用）
+- **本机 git 全局配置有失效的 ghproxy.com 代理改写**（url.*.insteadof）→ 任何 github 克隆必须用 `GIT_CONFIG_GLOBAL=/dev/null` 绕过
+- IDF 构建链路已验证：`tools/idf.ps1 build` 可直接编译（id.ps1 自动激活 venv）
+- 文档编号规则：`docs/0N-<主题>.md`（01 需求、02 设计、03 环境、04 VSCode、…）
+- 里程碑：M0-1 固件骨架已完成并编译通过（spider8.bin 202KB）；M0-2 舵机驱动（LEDC GPIO 4/5/6/7/15/16/17/18）
 
 ## 代码/脚本规范
 - **所有 .ps1 必须保存为 UTF-8 with BOM + CRLF**（PowerShell 5.1 否则中文乱码导致语法错误）
