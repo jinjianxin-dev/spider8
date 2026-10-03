@@ -21,6 +21,10 @@
 - 新增 .ps1 后必须做语法校验：`[Parser]::ParseFile(...)` 且实跑验证
 - PowerShell 工具输出捕获可能为空 → 用「脚本写文件 + Read 读取」拿结果
 - 禁止从 Bash 调用 powershell.exe（安全策略），改用 PowerShell 工具
+- **VS Code 任务必须显式写 `options.shell`**（executable + args），不要依赖 `terminal.integrated.defaultProfile`：
+  带 `-NoExit` 的终端 profile 被当默认终端时，VS Code 会把任务命令行**追加**到 profile args 后，
+  被 profile 的 `-Command` 吞掉 → 任务空转且永不结束（2026-10-03 踩过，详见 docs/04 §4.2）
+- 终端专用脚本（被 profile 点源）**不能写 `exit`**，要用 `return`，否则连终端会话一起关掉
 - 固件遵循：FreeRTOS 静态分配、ISR 最小化、外设驱动必须处理错误路径、不阻塞等待
 
 ## 里程碑
