@@ -9,9 +9,12 @@
 - ESP-IDF 安装位置：`E:\esp\esp-idf`（v5.5.5，子模块已全部修复），工具链 `E:\esp\.espressif`
 - ESP-IDF 开发用 Python：必须用 venv `E:\esp\.espressif\python_env\idf5.5_py3.13_env`（PATH 里系统 python 3.14.6 不可用）
 - **本机 git 全局配置有失效的 ghproxy.com 代理改写**（url.*.insteadof）→ 任何 github 克隆必须用 `GIT_CONFIG_GLOBAL=/dev/null` 绕过
-- IDF 构建链路已验证：`tools/idf.ps1 build` 可直接编译（id.ps1 自动激活 venv）
-- 文档编号规则：`docs/0N-<主题>.md`（01 需求、02 设计、03 环境、04 VSCode、…）
-- 里程碑：M0-1 固件骨架已完成并编译通过（spider8.bin 202KB）；M0-2 舵机驱动（LEDC GPIO 4/5/6/7/15/16/17/18）
+- IDF 构建链路已验证：`tools/idf.ps1` 是**唯一入口**（自动激活 venv、编译/烧写/监视都走它）
+- **IDF venv 定位原理（重要）**：`activate.py` 用「当前 python 的版本号」拼 venv 目录名 → `idf.ps1` 必须**硬绑定 `IDF_PYTHON_ENV_PATH`**（idf_tools 对该变量最高优先级），并前置 venv PATH；否则会去找 `idf5.5_py3.14_env` 而失败，并连带报 `. $idf_exports` 表达式无效（伪装成语法错）
+- 硬件：开发板串口 = **COM7**（ESP32-S3，Win 免驱）；已验证 N16R8 规格（Flash 16MB / PSRAM 8MB Octal / 240MHz 双核）
+- 抓串口日志必须显式设 UTF-8：`$sp.Encoding = [Text.Encoding]::UTF8`，默认 ASCII 会把中文变 `??????`
+- 文档编号规则：`docs/0N-<主题>.md`（01 需求、02 设计、03 环境、04 VSCode、05 M0里程碑）
+- 里程碑：M0-1 固件骨架已完成并**烧写+串口验收通过**（spider8.bin 202KB，1Hz 心跳稳定）；M0-2 舵机驱动（LEDC GPIO 4/5/6/7/15/16/17/18）
 
 ## 代码/脚本规范
 - **所有 .ps1 必须保存为 UTF-8 with BOM + CRLF**（PowerShell 5.1 否则中文乱码导致语法错误）
