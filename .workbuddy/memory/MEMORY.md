@@ -14,6 +14,7 @@
 - 硬件：开发板串口 = **COM7**（ESP32-S3，Win 免驱）；已验证 N16R8 规格（Flash 16MB / PSRAM 8MB Octal / 240MHz 双核）
 - 抓串口日志必须显式设 UTF-8：`$sp.Encoding = [Text.Encoding]::UTF8`，默认 ASCII 会把中文变 `??????`
 - 文档编号规则：`docs/0N-<主题>.md`（01 需求、02 设计、03 环境、04 VSCode、05 M0里程碑）
+- **交互教程站**：`docs/tutorial/`（index.html + style.css + data.js + app.js，纯静态无依赖；正文全在 `data.js` 的 `window.CHAPTERS`，改内容只动它）
 - 里程碑：M0-1 固件骨架已完成并**烧写+串口验收通过**（spider8.bin 202KB，1Hz 心跳稳定）；M0-2 舵机驱动（LEDC GPIO 4/5/6/7/15/16/17/18）
 
 ## 代码/脚本规范
