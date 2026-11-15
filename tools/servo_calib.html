@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spider8 舵机 trim / dir 标定台</title>
+<style>
+  :root{
+    --bg:#f5f7f6; --panel:#fff; --ink:#1f2a28; --muted:#5d6b67;
+    --line:#e2e8e6; --accent:#0F6E56; --accent-soft:#e3f1ec;
+    --warn:#b8541f; --warn-soft:#fbeede; --danger:#c0392b;
+    --shadow:0 2px 10px rgba(15,40,30,.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.65;font-size:15px}
+  .wrap{max-width:1120px;margin:0 auto;padding:26px 22px 70px}
+  h1{font-size:23px;margin:0 0 4px;color:var(--accent)}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+          padding:20px 24px;margin-bottom:18px;box-shadow:var(--shadow)}
+  h2{font-size:17px;margin:0 0 10px;color:var(--accent)}
+  h3{font-size:15px;margin:18px 0 8px}
+  p{margin:7px 0}
+  code{background:#eef3f1;padding:1px 6px;border-radius:5px;font-family:ui-monospace,Consolas,monospace;
+       font-size:12.5px;color:#0a4d3c}
+  .muted{color:var(--muted);font-size:13px}
+  .lead{color:var(--muted);margin-top:0;font-size:14px}
+  button{font-family:inherit;font-size:14px;border:1px solid var(--accent);background:var(--accent);
+         color:#fff;padding:8px 15px;border-radius:9px;cursor:pointer;transition:.15s}
+  button:hover{opacity:.88}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.ghost{background:#fff;color:var(--accent)}
+  button.warn{background:var(--warn);border-color:var(--warn)}
+  button.ghost.warn{background:#fff;color:var(--warn);border-color:var(--warn)}
+  .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:880px){.grid2{grid-template-columns:1fr}}
+  /* 连接状态 */
+  .badge{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;
+         padding:5px 12px;border-radius:20px;background:#eee;color:#555}
+  .badge .dot{width:9px;height:9px;border-radius:50%;background:#999}
+  .badge.on{background:var(--accent-soft);color:var(--accent)}
+  .badge.on .dot{background:var(--accent)}
+  .hintbox{background:var(--warn-soft);border-left:4px solid var(--warn);border-radius:0 9px 9px 0;
+           padding:10px 14px;font-size:13px;margin:10px 0}
+  .errbox{background:#fbe3e1;border-left:4px solid var(--danger);border-radius:0 9px 9px 0;
+          padding:10px 14px;font-size:13px;margin:10px 0;display:none}
+  /* ⑤ 区的连接状态条：说明按钮为什么是灰的，避免误以为坏了 */
+  .connbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+           background:var(--warn-soft);border-left:4px solid var(--warn);
+           border-radius:0 9px 9px 0;padding:10px 14px;font-size:13px;margin:10px 0}
+  .connbar.on{background:var(--accent-soft);border-left-color:var(--accent)}
+  .connbar .txt{flex:1;min-width:220px}
+  /* 通道按钮 */
+  .chans{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:10px 0}
+  @media(max-width:620px){.chans{grid-template-columns:repeat(2,1fr)}}
+  .chan{border:2px solid var(--line);background:#fff;border-radius:10px;padding:10px 6px;text-align:center;
+        cursor:pointer;transition:.15s}
+  .chan:hover{border-color:var(--accent)}
+  .chan.sel{border-color:var(--accent);background:var(--accent-soft)}
+  .chan .n{font-weight:700;font-size:15px}
+  .chan .l{font-size:11px;color:var(--muted);margin-top:1px}
+  .chan .v{font-size:12px;margin-top:4px;font-family:ui-monospace,Consolas,monospace;color:var(--accent);font-weight:700}
+  /* 滑块区 */
+  .bigval{font-size:40px;font-weight:800;color:var(--accent);text-align:center;
+          font-family:ui-monospace,Consolas,monospace;margin:6px 0 2px}
+  .bigval small{font-size:18px}
+  input[type=range]{width:100%;height:34px;accent-color:var(--accent);cursor:pointer}
+  .ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:-6px}
+  .readout{background:#fbfdfc;border:1px solid var(--line);border-radius:10px;padding:12px 15px;margin:12px 0;
+           font-size:13px}
+  .readout b{color:var(--accent)}
+  .kbd{font-family:ui-monospace,monospace;background:#eef3f1;border-radius:4px;padding:1px 6px;font-size:12px}
+  /* 表格 */
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left}
+  th{background:var(--accent-soft);color:var(--accent)}
+  tr:nth-child(even) td{background:#fafcfb}
+  tr.cur td{background:var(--accent-soft);font-weight:700}
+  td.mono{font-family:ui-monospace,Consolas,monospace}
+  /* 终端 */
+  .term{background:#0f1f1a;color:#d6f0e6;border-radius:10px;padding:12px 14px;height:230px;overflow:auto;
+        font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-all}
+  .term .tx{color:#8fd3ff}
+  .term .sys{color:#ffd28a}
+  .term .er{color:#ff9c8f}
+  input[type=text]{font-family:ui-monospace,Consolas,monospace;font-size:13px;padding:8px 11px;
+        border:1px solid var(--line);border-radius:8px;flex:1;min-width:180px}
+  ol{margin:8px 0;padding-left:22px}
+  ol li{margin:6px 0}
+  .foot{color:var(--muted);font-size:12px;text-align:center;margin-top:26px}
+  /* 可折叠的长排查清单 */
+  details.fold{margin:10px 0;border:1px solid var(--line);border-radius:10px;background:#fff}
+  details.fold>summary{cursor:pointer;padding:10px 14px;font-size:13px;font-weight:600;
+                       color:var(--warn);list-style:none;user-select:none}
+  details.fold>summary::-webkit-details-marker{display:none}
+  details.fold>summary::before{content:"▸ "}
+  details.fold[open]>summary::before{content:"▾ "}
+  details.fold>summary:hover{background:#fffaf0}
+  details.fold>.foldbody{padding:0 12px 4px}
+  details.fold .hintbox{margin-top:2px}
+  /* 脉宽基准区 */
+  .pwresult{margin-top:12px;padding:12px 15px;border-radius:10px;font-size:13px;
+            background:var(--accent-soft);border-left:4px solid var(--accent)}
+  .pwresult b{color:var(--accent)}
+  .pwresult .warnline{color:var(--warn);font-weight:600}
+  .smallbtn{padding:6px 10px;font-size:13px}
+  /* WiFi 连接：自动寻址提示条 / 手动地址 */
+  .netbar{background:var(--warn-soft);border-left:4px solid var(--warn);border-radius:0 9px 9px 0;
+          padding:10px 14px;font-size:13px;margin:0 0 16px}
+  .netbar.on{background:var(--accent-soft);border-left-color:var(--accent)}
+  .netbar>b{color:var(--warn)}
+  .netbar.on>b{color:var(--accent)}
+  .netbar code{background:#fff}
+  .badge.wait{background:#fff2dc;color:var(--warn)}
+  .badge.wait .dot{background:#e0a020}
+  .netrow{display:grid;grid-template-columns:92px 1fr;gap:9px;align-items:center;margin-top:9px}
+  .netrow label{font-size:13px;color:var(--muted)}
+  details.netset{margin:12px 0 0;border:1px solid var(--line);border-radius:10px;background:#fff}
+  details.netset>summary{cursor:pointer;padding:9px 14px;font-size:13px;font-weight:600;color:var(--accent)}
+  details.netset>div{padding:0 14px 10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>🔧 Spider8 舵机标定台</h1>
+  <div class="sub">装机前先定脉宽范围（500~3000µs）与站立中位 → 再拖滑块对齐站立姿势 → 一键保存 trim/dir。WiFi 与 USB 串口都能用，纯离线网页。</div>
+
+  <!-- 自动寻址提示条：双击本地文件时不必手填地址 -->
+  <div class="netbar" id="addrBar">
+    <b id="addrMsg">正在自动寻找机器狗…</b>
+    <div class="row" style="margin-top:7px">
+      <button id="btnGoBoard" class="ghost" style="display:none">🌐 打开板子里的网页控制台（新窗口）</button>
+      <span class="muted" id="netSummary">地址由板子自己报告，通常不用手填。</span>
+    </div>
+  </div>
+
+  <!-- ① 连接 -->
+  <section id="secConn">
+    <h2>① 连上开发板（WiFi 优先，USB 兜底）</h2>
+    <p class="lead">机器狗连着家里 WiFi 时，本页通过 <code>/api/cmd</code> 发命令，和串口敲命令<b>走的是同一张命令表</b>，不用插 USB 线、不用选端口。WiFi 没配或连不上时，再插 USB 线用串口。</p>
+    <div class="row">
+      <button id="btnWifi">🌐 WiFi 连接（推荐）</button>
+      <button id="btnConn" class="ghost">🔌 改用 USB 串口</button>
+      <button id="btnDisc" class="ghost" disabled>断开</button>
+      <span class="badge" id="badge"><span class="dot"></span><span id="badgeTxt">未连接</span></span>
+      <span class="muted" id="envTip"></span>
+    </div>
+    <div class="errbox" id="errbox"></div>
+
+    <details class="netset" id="netSet">
+      <summary>⚙ 设置 / WiFi 连不上看这里</summary>
+      <div>
+        <div class="netrow">
+          <label for="apiInput">控制台地址</label>
+          <input type="text" id="apiInput" placeholder="http://192.168.0.xxx（插 USB 敲 wifidiag 可查）">
+        </div>
+        <div class="row" style="margin-top:9px">
+          <button id="btnSaveApi" class="ghost">保存并连接</button>
+          <button id="btnProbe" class="ghost">重新自动寻找</button>
+        </div>
+        <div class="hintbox" style="margin-bottom:0">
+          <b>连不上按顺序查：</b>① 别填 <code>192.168.4.1</code>——连上家里路由后热点会自动关闭，
+          这个地址现在常是别的设备 / VPN 带过去的交换机登录页（<b>出现要账号密码的页面就立刻关掉，别输密码</b>）；
+          ② 机器狗是否通电（拔了电脑线要给板子单独供电）；③ 电脑和机器狗是不是同一个 WiFi；
+          ④ 电脑开了 VPN（如 LetsTUN）会抢路由，测试时先退出；⑤ 插 USB 线敲 <code>wifidiag</code> 看板子拿到的 IP。<br>
+          <b>板子 IP 会变不用手填：</b>本页先试记住的地址，都落空就自动扫常见网段，只认真正回 <code>pong</code> 的那个。
+          也可以在网址后面加 <code>?api=http://板子IP</code> 直接指定（控制台里存的地址和本地文件不共享，这是正常的）。<br>
+          <b>用 USB 串口</b>必须用 Edge / Chrome，插板上标 <b>USB</b> 的口（不是 UART 口）；连接时程序会自动释放 DTR/RTS，
+          否则 ESP32 会被一直按在复位里，表现为"端口能打开但一个字都收不到"。
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <div class="grid2">
+    <!-- 左：校准操作 -->
+    <div>
+      <section>
+        <h2>② 通电自检（先做这一步！）</h2>
+        <p class="lead">一次只接一只舵机，点它的通道，然后按下面的按钮让它<b>来回摆两次</b>。摆了 → 硬件全通；不摆 → 先查供电，别急着调 trim。</p>
+        <details class="fold">
+          <summary>📖 展开：舵机完全不动时的完整排查清单（8 条 · 默认收起）</summary>
+          <div class="foldbody">
+        <div class="hintbox" style="background:#fff7e6;border-color:#e0a83b">
+          <b>⓪ 先做这一条（最常见）：量到 ≈0.2V 是<b>好消息</b>，但舵机在 1500µs 本来就不动！</b><br>
+          直流档读到 <b>0.08~0.41V 区间 = PWM 波形完全正常</b>（3.3V × 1500µs / 20000µs = 0.248V）。
+          可 <b>0.2V 恰好是站姿 1500µs（舵机中位）</b> —— 舵机臂本来就在中位时，给它中位脉宽就是保持不动。
+          <b>务必先敲 <code>pwm 0 2500</code>（或点下面「通电自检」、<code>cal 0 40</code>）让它偏离中位</b>：
+          电压应升到 ≈0.41V、舵机应转，测完 <code>pwm off</code>。没做这步之前，"舵机不动"很可能只是<b>还没让它动过</b>。<br>
+          <span style="display:block;border-top:1px dashed #d9b36a;margin:8px 0 7px"></span>
+          <b>⚡ 点动后电压变了、舵机仍不动，才按这个顺序查：</b><br>
+          ① <b>PCA9685 的 V+ 端子没接 5V，或电源开关没开</b> —— 烧写时特意让你先别开舵机电源，标定前要记得开。<b>芯片自己靠 VCC(3.3V) 工作</b>，所以 V+ 没电时串口、<code>status</code>、命令回显全都正常，只有舵机没劲，极具迷惑性。万用表量 V+ 对 GND 应有 5V。<br>
+          ② <b>没有三方共地</b>：适配器 GND、PCA9685 GND、ESP32 GND 必须连在一起。<br>
+          ③ <b>OE 没接到 GND</b>：OE 是<b>低电平使能</b>，拉高会关掉全部 16 路输出；不少板子悬空会被拉成高电平，<b>请直接用杜邦线把 OE 接 GND</b>（早期接线图误写成"悬空即可"，已更正）。同时确认：舵机三线没插反（棕=GND / 红=V+ / 橙=信号）、插的是 0~7 号排针，
+          <b>并看清板子通道三根针的丝印顺序</b>——各家不同（有的 PWM/V+/GND，有的 GND/V+/PWM），
+          别只按舵机线颜色盲插。<br>
+          <b>两步定位法：</b><br>
+          ④ 敲 <code>cal 0 40</code> 再敲 <code>status</code>。CH0 舵机角变成 <b>111°</b>（90 + 40 − 19）→ I²C 已把脉宽写进芯片，<b>软件链路全通</b>；还是 90° 才是固件/命令问题。注意这<b>只证明芯片收到数据</b>，不等于引脚真的在输出（OE 拉高时芯片照样应答）。<br>
+          ⑤ 验引脚：把 LED 串 470Ω 接在 <b>0 号通道信号脚 ↔ GND</b>，敲 <code>pwm 0 1500</code> 应微亮、<code>pwm 0 2500</code> 明显变亮（测完 <code>pwm off</code>）。LED 不亮 → OE/VCC 问题；LED 会亮但舵机不动 → 舵机 5V 供电或线序问题。<br>
+          ⑥ <b>信号脚量到恒定 ≈3.3V 是不正常的</b>：正常 PWM 用直流档只该读到 0.08~0.41V
+          （<code>pwm 0 500</code>≈0.08V、<code>pwm 0 1500</code>≈0.25V、<code>pwm 0 2500</code>≈0.41V）。
+          恒 3.3V = 输出被禁用呈高阻 / <b>量错脚</b>（SDA、SCL 空闲时同样被上拉到 3.3V）/ <b>固件配置错</b>。<br>
+          ⑦ <b>2026-11-08 已定位并修好的固件 bug</b>：旧版把 PCA9685 的位定义写反了
+          （把 MODE1 的 AI 当成 SLEEP、把 MODE2 的 INVRT 当成 AI），导致 PRESCALE 停在默认 200Hz、
+          输出极性反转、4 字节连写全塌到同一寄存器 → <code>pcadiag</code> 会显示
+          <code>PRESCALE=30</code>、<code>ON=OFF</code>。<b>正确读数必须是</b>
+          <code>MODE1=0x21 (AI=1)</code>、<code>MODE2=0x04 (INVRT=0)</code>、
+          <code>PRESCALE=121</code>、<code>CH0 ON=0 OFF≈307</code>。
+          四项全对才算固件没问题；不全对说明板子里还是旧固件，需重新烧写。<br>
+          ⑧ <b>最后一种可能：信号峰值只有 3.3V</b>。PCA9685 输出的高电平来自 <b>VCC</b>（本项目接 ESP32 3V3），
+          <b>不是 V+ 的 5V</b>。有些 MG90S 在 5V 供电下要求信号 &gt;3.5V，3.3V 会完全不响应
+          （micro:bit 那类方案常把 VCC 接 5V，输出 5V 峰值，所以能驱动）。
+          <b>⚠ 千万别为了提幅值把 VCC 直接改接 5V</b>：SDA/SCL 会被上拉到 5V 打到 ESP32 的 GPIO8/9。
+          真要解决得加 3.3V→5V 电平转换模块（如 74AHCT125），或先量一下 SDA 空闲电压确认板子有没有电平转换。<br>
+          <b>先 OE→GND，再敲 <code>pwm 0 500</code> 与 <code>pwm 0 2500</code> 各量一次</b>，
+          两次应差约 0.33V；纹丝不动就点下面「📡 读芯片寄存器」看四项判读。
+        </div>
+          </div>
+        </details>
+        <div class="chans" id="chans"></div>
+        <div class="row">
+          <button id="btnWiggle" disabled>🔍 通电自检：让选中的舵机来回摆 2 次</button>
+          <button id="btnStand" class="ghost" disabled>↺ 回到站姿</button>
+          <button id="btnStatus" class="ghost" disabled>📋 读取板子状态</button>
+        </div>
+        <p class="muted"><b>「回到站姿」点了不动是正常的</b>：板子上电就一直停在当前站姿，再喊一次"站直"角度没有任何变化。想看到舵机动，请用上面的自检按钮，或拖 ④ 的 trim 滑块。<br>注意：2026-11-13 起站姿改成「膝 −48° / 髋 24°」，比装配基准更弯 10°，所以 8 路舵机角不再是 90°+trim（髋 +5°、膝 −10°），但 <b>trim 值本身完全没变、不用重标</b>。</p>
+      </section>
+
+      <section>
+        <h2>③ 装机前基准：确认脉宽范围 &amp; 站立中位</h2>
+        <p class="lead">这一步在装机械腿<b>之前</b>做：先弄清这只舵机「从多少 µs 到多少 µs」，再把它停在装腿基准，然后<b>保持通电</b>把腿装上去。用的是裸脉宽 <code>pwm</code>，绕过 trim/dir；测试范围已放宽到 <b>500~3000µs</b>（需烧写 11-11 版固件，否则超过 2500 会被固件拒绝）。</p>
+
+        <div class="hintbox" style="background:#fff0ee;border-left-color:var(--danger)">
+          <b>⚠ 先分清「360° 舵机」是哪一种，这决定能不能装腿：</b><br>
+          <b>A · 位置舵机</b>（大行程、能停在指定角度）：给 1700µs 会<b>转到一个角度就停住</b> → 可以用；大行程型号的满程端点常超过 2500µs，必须实测。<br>
+          <b>B · 连续旋转舵机</b>（其实是减速电机）：给 1700µs 会<b>一直转不停</b>，1500µs 只是「停转」而不是某个角度 → <b>没有位置保持能力，装机械腿会一直转，不能用</b>。<br>
+          下面所有「转了多少度」的推算<b>只在 A 类成立</b>。点「判别舵机类型」：发 1700µs 保持 3 秒再回 1500µs，盯住它<b>停不停</b>。
+        </div>
+        <div class="row" style="margin-bottom:14px">
+          <button id="btnPwType" disabled>🧭 判别舵机类型（1700µs / 3 秒）</button>
+          <span class="muted" id="pwTypeTip">转一下就停 = 位置舵机；一直转 = 连续旋转舵机</span>
+        </div>
+
+        <div class="hintbox" style="background:#eef6ff;border-color:#5b9bd5">
+          <b>「1500µs 该是 90° 还是 180°？」两个说法都没错，量的不是同一个东西：</b><br>
+          固件里的「90°」是它自己用的<b>内部刻度</b>（0~180 半量程），不是舵机轴真实转过的角度 —— 固件只把内部角度换算成脉宽，并不知道舵机物理上转了多少度。<br>
+          若波段是 500~2500µs ↔ 0~360°，1500µs 在物理上确实是 180°；<b>本机实测波段就是 500~2900µs</b>，
+          1500µs 只对应 (1000/2400)×360 = <b>150°</b>，连物理中点都不是。<br>
+          <b>所以装腿不必追求「物理 180° 中点」</b>：我们人为把「腿站直」定在 1500µs，固件上电也发 1500µs，两边一致就不会跳。真正要改的是下面算出来的 <code>us_span</code>。
+        </div>
+
+        <h3>① 找脉宽端点（波段范围）</h3>
+        <div class="bigval" id="pwBig">1500<small>µs</small></div>
+        <input type="range" id="pwSlider" min="500" max="3000" step="10" value="1500" disabled>
+        <div class="ticks"><span>500</span><span>1000</span><span>1500</span><span>2000</span><span>2500</span><span>3000</span></div>
+        <div class="row" style="justify-content:center;margin:10px 0">
+          <button class="ghost smallbtn" id="btnPwM100" disabled>−100</button>
+          <button class="ghost smallbtn" id="btnPwM10" disabled>−10</button>
+          <button class="ghost smallbtn" id="btnPwP10" disabled>+10</button>
+          <button class="ghost smallbtn" id="btnPwP100" disabled>+100</button>
+        </div>
+        <div class="row" style="flex-wrap:wrap;gap:8px">
+          <button class="ghost smallbtn" id="btnPw500" disabled>500</button>
+          <button class="ghost smallbtn" id="btnPw1000" disabled>1000</button>
+          <button class="smallbtn" id="btnPw1500" disabled>1500（装腿基准）</button>
+          <button class="ghost smallbtn" id="btnPw2000" disabled>2000</button>
+          <button class="ghost smallbtn" id="btnPw2500" disabled>2500</button>
+          <button class="ghost smallbtn" id="btnPw2700" disabled>2700</button>
+          <button class="ghost smallbtn" id="btnPw2900" disabled>2900</button>
+          <button class="ghost smallbtn" id="btnPw3000" disabled>3000</button>
+          <button class="ghost warn smallbtn" id="btnPwScan" disabled>▶ 自动扫一遍（约 10 秒）</button>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="ghost smallbtn" id="btnPwMin" disabled>⬅ 记为最小端点</button>
+          <button class="ghost smallbtn" id="btnPwMax" disabled>➡ 记为最大端点</button>
+          <button class="ghost smallbtn" id="btnPwReset" disabled>清除端点记录</button>
+        </div>
+        <div class="row" style="flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center">
+          <span class="muted">📐 <b>线性外推</b>（仅位置舵机）：从</span>
+          <input type="number" id="pwExLo" value="500" min="300" max="3000" step="10" style="width:76px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font:inherit">
+          <span class="muted">µs 推到</span>
+          <input type="number" id="pwExHi" value="2900" min="300" max="3000" step="10" style="width:76px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font:inherit">
+          <span class="muted">µs，舵机转了</span>
+          <input type="number" id="pwExDeg" value="360" min="1" max="720" step="5" style="width:76px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font:inherit">
+          <span class="muted">° → 转满 360° 的理论端点 ≈ <b id="pwExEnd">—</b>µs</span>
+        </div>
+        <div class="muted" id="pwExTip" style="margin-top:4px"></div>
+        <div class="muted" style="margin-top:4px">本机端点<b>已实测裁决：500~2900µs = 360°</b>（早期目测「500→2500 转 330°」与它不自洽，已弃用）。
+          此工具保留给以后换舵机时估算「该往哪个脉宽继续找」。</div>
+        <div class="readout" id="pwReadout">选中通道后，这里显示当前脉宽对应的固件内部角、360° 舵机物理角、万用表预期电压，以及已记录的端点。</div>
+
+        <h3>② 停在装腿基准，装机械腿</h3>
+        <div class="row">
+          <button id="btnPwMid" disabled>🎯 回装腿基准（1500µs）</button>
+          <button class="ghost" id="btnPwMidMeasured" disabled>🎯 去实测中点（仅观察）</button>
+          <button class="ghost warn" id="btnPwOff" disabled>退出 raw 模式（pwm off）</button>
+        </div>
+        <div class="hintbox">
+          <b>装腿要点：</b>让舵机停在 <b>1500µs</b> 并<b>保持通电</b>，再把舵机臂／机械腿装到该有的站立姿势
+          （膝 −38° → 髋 19°，髋轴离地 104mm）。装完点 <code>pwm off</code> 回到步态控制。<br>
+          <b>「去实测中点」只用来看看物理中位在哪，别拿它装腿</b>：固件上电默认发 1500µs，
+          若按实测中点（比如 1700µs）装腿，一退出 raw 就会转回去，腿就歪了。<br>
+          <b>别让舵机顶在 500 / 3000µs 超过几秒</b>（堵转发热）。<code>pwm</code> 期间步态被冻结，
+          不 <code>pwm off</code> 的话 ④ 的 trim 滑块不会生效。固件把裸脉宽硬限在 <b>500~3000µs</b>，
+          端点若还在这之外，需要再放宽 <code>SERVO_US_CMD_MAX</code> 并重烧。
+        </div>
+        <div class="pwresult" id="pwResult" style="display:none"></div>
+      </section>
+
+      <section>
+        <h2>🔎 电压对了但舵机不动？做这三点测量</h2>
+        <p class="lead">黑表笔<b>始终点在舵机的棕线（GND）上</b>，不要点板子 GND —— 只有以舵机自己的地为参考，量到的才是舵机真正"看到"的电压。</p>
+        <div class="hintbox" style="background:#eef6ff;border-color:#5b9bd5">
+          <b>先理解「电压一直在 0.40、没有波动」：</b>万用表直流档显示的是 50Hz 方波的<b>平均值</b>，
+          <b>稳定不跳是正确的</b>（方波太快，万用表跟不上；想看跳动要切交流档/频率档或用示波器）。
+          <code>pwm 0 1500</code>≈0.25V、<code>pwm 0 2500</code>≈0.41V ——
+          <b>从 0.2V 升到 0.40V 恰恰证明命令生效、引脚输出在跟随</b>，
+          ESP32 → I²C → PCA9685 → 通道引脚这一段已经全部正常，不用再查程序或重烧固件。
+        </div>
+        <table>
+          <tr><th>#</th><th>红表笔 / 档位</th><th>正常值</th><th>不达标说明</th></tr>
+          <tr><td>①</td><td>点<b>舵机红线</b>（V+），直流电压档</td><td>稳定 <b>5V</b>（≥4.8V）</td><td>舵机根本没电：V+ 电源没开 / 端子到排针 V+ 不通 / 三根线插反</td></tr>
+          <tr><td>②</td><td>点<b>舵机橙线</b>（信号），直流电压档</td><td>2500µs 时 <b>≈0.40V</b></td><td>信号没送到舵机：橙线插错针 / 排针顺序不同 / 插头接触不良</td></tr>
+          <tr><td>③</td><td><b>舵机棕线 ↔ PCA9685 GND</b>，通断/电阻档</td><td>≈0Ω、蜂鸣导通</td><td>没共地：信号没有参考电平，舵机收不到脉冲（用板子 GND 量会"看起来全对"，很有迷惑性）</td></tr>
+        </table>
+        <div class="row" style="flex-wrap:wrap;gap:8px;margin-top:10px">
+          <label>① 红线
+            <select id="mq1" style="padding:5px 8px;border:1px solid var(--line);border-radius:6px">
+              <option value="">未测</option><option value="ok">≈5V</option><option value="bad">0V / 明显偏低</option>
+            </select>
+          </label>
+          <label>② 橙线
+            <select id="mq2" style="padding:5px 8px;border:1px solid var(--line);border-radius:6px">
+              <option value="">未测</option><option value="ok">≈0.40V</option><option value="bad">量不到 / 差很多</option>
+            </select>
+          </label>
+          <label>③ 共地
+            <select id="mq3" style="padding:5px 8px;border:1px solid var(--line);border-radius:6px">
+              <option value="">未测</option><option value="ok">导通 ≈0Ω</option><option value="bad">不通 / 电阻很大</option>
+            </select>
+          </label>
+          <button id="btnMq">给出结论</button>
+        </div>
+        <div id="mqOut" style="margin-top:10px;padding:10px 14px;border-radius:9px;font-size:13px;display:none"></div>
+      </section>
+
+      <section>
+        <h2>④ 拖滑块，把腿摆到站立位置</h2>
+        <p class="lead">拖动时程序不断把 <code>trim</code> 发给板子，舵机会跟着慢慢转。看到这只腿摆到<b>该有的站立姿势</b>就停手，这个值就是它的 trim。</p>
+
+        <div class="bigval" id="bigVal">+0.0<small>°</small></div>
+        <input type="range" id="slider" min="-50" max="50" step="0.5" value="0" disabled>
+        <div class="ticks"><span>−50°</span><span>−25°</span><span>0°</span><span>+25°</span><span>+50°</span></div>
+
+        <div class="row" style="justify-content:center;margin:12px 0">
+          <button class="ghost" id="btnM1" disabled>−1°</button>
+          <button class="ghost" id="btnM05" disabled>−0.5°</button>
+          <button class="ghost warn" id="btnZero" disabled>归零 0°</button>
+          <button class="ghost" id="btnP05" disabled>+0.5°</button>
+          <button class="ghost" id="btnP1" disabled>+1°</button>
+        </div>
+        <p class="muted" style="text-align:center">也可以用键盘 <span class="kbd">←</span> <span class="kbd">→</span> 每次微调 0.5°</p>
+
+        <div class="readout" id="readout">选中通道后，这里会显示对应的舵机角和实际发出的命令。</div>
+
+        <div class="row">
+          <button class="ghost" id="btnDir" disabled>🔁 方向 dir：+1（点一下安全翻转）</button>
+          <span class="muted" id="dirTip">翻转前后舵机不该动；按钮会先自动让全机回站姿。</span>
+        </div>
+        <div class="hintbox" style="background:#eef6ff;border-color:#5b9bd5">
+          <b>为什么以前一点 dir 舵机就乱转？</b>固件里 dir 是乘在「关节角 − 站立基准角」上的系数，<b>不是独立开关</b>。
+          站姿时这个差 = 0，翻转不会改变舵机角；但只要板子还停在 <code>cal</code> 手动点动、<code>walk</code> 步态、
+          或刚退出 <code>pwm</code> 还在回位途中，差值 ≠ 0，翻转就会把腿<b>镜像到另一边</b>，舵机猛地转过去，
+          同时 20ms 任务正在刷新 8 路，看起来像「别的舵机也在动」。<br>
+          现在这个按钮会<b>先做安全归位</b>（退出 pwm/cal → 回站姿 → 等姿态收敛 → 才改 dir），
+          并且<b>只给选中通道发一条命令</b>。若刚才确实不在站姿，8 只会归位一次 —— 那是安全步骤，不是 dir 造成的。
+        </div>
+        <p class="muted">方向判断单独做：发 <code>cal 0 40</code> 看腿是不是真的向前摆，若向后才把这一路设成 −1。判完记得 <code>cal off</code>。下面的命令框可以直接敲。</p>
+      </section>
+    </div>
+
+    <!-- 右：总表 + 终端 -->
+    <div>
+      <section>
+        <h2>⑤ 8 路标定值总表</h2>
+        <p class="lead">「读取板子状态」会把板子里真实的 trim/dir 填回来。8 路都对准后点保存。</p>
+        <table>
+          <thead><tr><th>CH</th><th>关节</th><th>trim</th><th>dir</th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div class="connbar" id="sec5Tip">
+          <span class="txt" id="sec5TipTxt">⚠ <b>下面三个按钮现在故意是灰的</b>：还没连上开发板，发命令也没有人接。回 ① 点「连接开发板」，状态变成「已连接」后会自动亮起来。</span>
+          <button class="ghost smallbtn" id="btnGoConn">↑ 回 ① 去连接</button>
+        </div>
+        <div class="row">
+          <button id="btnSave" disabled>💾 保存到板子（save）</button>
+          <button id="btnClear" class="ghost warn" disabled>只归零 trim（保留 dir）</button>
+          <button id="btnClearAll" class="ghost warn" disabled>trim + dir 全清</button>
+          <button id="btnExport" class="ghost">📄 导出命令清单（不用连板子）</button>
+        </div>
+        <p class="muted">保存后写入 NVS，断电不丢。<b>不保存的话，重启又回到 +1 / 0.0°，白调。</b><br>
+          <b>两个归零按钮的区别：</b>「只归零 trim」<b>不会碰方向</b>，8 路只改微调角；
+          「trim + dir 全清」会把所有已翻成 −1 的方向也翻回 +1，
+          如果当时不在站姿，那些舵机会<b>一起跳一下</b> —— 所以只有真想重头校准时才用它。</p>
+
+        <details style="margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:10px 12px">
+          <summary style="cursor:pointer;font-weight:600">🔄 改 <code>us_span</code> 后的 trim 换算（2000 → 1200，默认收起）</summary>
+          <div class="hintbox" style="margin-top:10px">
+            站姿时 <code>脉宽 = 1500 + trim × us_span / 180</code>。固件把 <code>us_span</code>
+            从 2000 改成 <b>1200</b> 后（实测 500~2900µs = 360°，跨度 ÷ 2），同一个 trim
+            发出的脉宽会缩小，站姿会偏。要让脉宽保持不变：
+            <b>新 trim = 旧 trim × 旧 span ÷ 新 span = 旧 trim × 1.6667</b>。<br>
+            <b>使用顺序：</b>先烧写新固件 → 点下面「📋 读取板子状态」取回 NVS 里的旧 trim（快照）
+            → 点「写入换算值 + save」。换算后脉宽不变，<b>舵机应该不跳</b>；
+            若发现腿还是歪，用 ④ 的滑块肉眼重拖一遍更稳。<br>
+            <span class="muted">数据源是「读取板子状态」那一刻的快照，重复点写入不会累积放大；改过滑块请重新读取。</span><br>
+            <b style="color:var(--danger)">⚠ 这个换算整个项目只做一次：</b>
+            若 <code>status</code> 里 trim 已经是 <b>−41.7 / −43.3 / +30.0</b> 这类换算后的值
+            （2026-11-11 助手已通过串口完成并 <code>save</code>），<b>不要再点「写入换算值」</b>，
+            否则会把 trim 再放大 1.6667 倍、站姿全歪。本工具留给「以后换舵机 / 重调 span」时复用。<br>
+            <b style="color:var(--danger)">⚠ 2026-11-13 起站姿不再等于装配基准</b>：
+            现在站姿脉宽 = <code>1500 + (站姿偏移 + trim) × span / 180</code>（髋 +5°、膝 −10°），
+            上面的换算公式假设偏移为 0，<b>以后真要重调 span 时不能直接套用</b>。
+          </div>
+          <div class="row" style="margin:8px 0">
+            <span class="muted">旧 span</span>
+            <input type="number" id="spanOld" value="2000" min="100" max="4000" step="10" style="width:90px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font:inherit">
+            <span class="muted">新 span</span>
+            <input type="number" id="spanNew" value="1200" min="100" max="4000" step="10" style="width:90px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font:inherit">
+            <span class="muted">倍率 <b id="spanConvK">1.6667</b></span>
+          </div>
+          <table>
+            <thead><tr><th>CH</th><th>关节</th><th>旧 trim</th><th>换算后</th></tr></thead>
+            <tbody id="spanConvBody"></tbody>
+          </table>
+          <div class="errbox" id="spanConvWarn" style="margin:8px 0"></div>
+          <div class="row">
+            <button class="ghost smallbtn" id="btnSpanRead" disabled>📋 读取板子状态</button>
+            <button class="smallbtn" id="btnSpanApply" disabled>写入换算值 + save</button>
+          </div>
+        </details>
+      </section>
+
+      <section>
+        <h2>⑥ 串口窗口</h2>
+        <div class="term" id="term"></div>
+        <div class="row" style="margin-top:9px">
+          <input type="text" id="cmdInput" placeholder="手动敲命令，如 cal 0 40 / status / help" disabled>
+          <button id="btnSend" disabled>发送</button>
+          <button id="btnTermClear" class="ghost">清屏</button>
+        </div>
+        <div class="row" style="margin-top:6px">
+          <button id="btnPcaDiag" class="ghost" disabled>📡 读芯片寄存器（pcadiag）</button>
+          <span class="muted">需先烧写 11-08 诊断固件；OE 是硬件脚读不到，要另用万用表量</span>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ⑥ 流程 -->
+  <section>
+    <h2>⑦ 完整标定流程（照着做）</h2>
+    <ol>
+      <li><b>只接一只舵机</b>（比如 0 号 = 左前髋）。8 只全插上，一旦方向反了会同时撞限位。<b>打开 5V 电源</b>、确认三方共地；用电池盒时先量<b>带载电压</b>（发命令瞬间不能掉到 4.8V 以下）。</li>
+      <li>连上板子 → 选中这只舵机的通道 → 点<b>「通电自检」</b>。它会用 <code>cal</code> 让这只舵机来回摆 2 次。<b>摆了才继续；没摆就按 ② 的黄框查 V+ / 共地 / OE / 线序，别往下调。</b></li>
+      <li><b>装机前基准（③）</b>：先点「判别舵机类型」确认它是<b>位置舵机</b>（不是一直转的连续旋转舵机）；再用脉宽滑块从 500 慢慢推到 <b>3000</b>（须先烧写 11-11 版固件），必要时用「📐 线性外推」估出该往哪个脉宽找端点；找到「刚开始动」和「刚到头」两个脉宽，分别点<b>「记为最小 / 最大端点」</b>；然后点<b>「回装腿基准 1500µs」</b>，<b>保持通电</b>把机械腿装到站立姿势；装完点 <code>pwm off</code>。<b>「去实测中点」只用来观察，别拿它装腿。</b></li>
+      <li><b>判方向</b>：自检时看它是往前还是往后摆。也可在命令框敲 <code>cal 0 40</code> 单独确认，
+        <b>判完先敲 <code>cal off</code> 回站姿</b>。方向反了 → 点「方向 dir」翻转成 −1
+        （按钮会再自动归位一次并等待姿态收敛，翻转瞬间舵机不该动），再自检一次确认。</li>
+      <li><b>调 trim</b>：拖滑块，舵机会跟着转，看到这只腿摆到<b>该有的站立姿势</b>就停手。这个值就是这一路的 trim。当前站姿是<b>膝 −48° / 髋 24°</b>（比装腿时的 −38°/19° 更弯 10°），认准这个姿势即可，装配基准与 trim 都不用改。</li>
+      <li>换下一只舵机、选对应通道，重复 2~4 步。全部 8 路调完 → <b>点「保存」</b>，看到「标定值已写入 NVS」才算成功。</li>
+    </ol>
+    <div class="hintbox">
+      <b>六个坑：</b><br>
+      ⓪ <b>点「回到站姿」看不到动作是正常的</b>：上电后本来就一直站在这个姿势，角度没变，舵机当然不动。要看动作必须发会改变角度的命令（自检按钮 / <code>cal</code> / <code>trim</code>）。<br>
+      ① trim 上限已放宽到 <b>±50°</b>（与固件 <code>SERVO_TRIM_LIMIT_DEG</code> 一致）：本机 8 只 360° 舵机的装配基准整体偏移，
+      换算 span 后髋需要到 −43° 左右。这只是软件夹紧量，动作幅度不受影响；若仍不够，说明舵机臂物理装歪了，
+      应把臂拔下来重插到 1500µs 站姿位置，让 trim 回到几度的小误差。<br>
+      ② <code>pwm</code> / <code>pwmscan</code> 发的是"裸脉宽"，<b>绕过 trim/dir</b>，只能验证线有没有波形，<b>不能用来判方向</b>。判方向请用 <code>cal</code>。<br>
+      ③ <b>改 dir 之前先回站姿</b>（<code>cal off</code> / <code>pose stand</code> / <code>pwm off</code>），④ 的按钮已自动处理。
+      固件 11-13 起翻转 dir 会用「保持当前输出脉宽不变」反解新 trim，<b>翻转瞬间舵机不该动</b>；
+      但 <b>trim 数值会跟着变</b>（方向反了，补偿值当然要变），这是正常的，不是标定丢了。
+      翻转后记得 <code>save</code>，否则掉电会回到旧的 dir/trim。<br>
+      ④ 别用手掰舵机臂，8 只同时堵转会超出 3A 供电能力。<br>
+      ⑤ <b>360° 位置舵机的角度映射已修好</b>：本机实测 <b>500~2900µs = 360°</b>，
+      <code>config.h</code> 的 <code>SERVO_US_SPAN_DEFAULT</code> 已从 2000 改成 <b>1200</b>（= 实测跨度 ÷ 2），
+      重烧后 <b>1° 指令 = 1° 物理角</b>，步态 IK、软限位、600°/s 限速全部对齐。
+      <code>SERVO_US_MID_DEFAULT</code> 仍 1500、装腿仍按 1500µs；
+      1500µs 不是本波段的物理中点（只对应 150°），但装腿不需要物理中点。<br>
+      ⚠ 只有 <b>改 <code>us_span</code> 那次重烧</b> 才需要换算 trim。
+      2026-11-13 只把「默认站姿」从 −38° 改成 −48°，装配基准没动，
+      <b>NVS 里的 8 个 trim 原样保留、一个都不用重标</b>；上电时舵机会自动多走膝 −10° / 髋 +5°。
+    </div>
+    <div class="hintbox" style="background:var(--accent-soft);border-left-color:var(--accent)">
+      <b>✅ 站姿调好、倍率也定了 —— 下一步仍不是立刻 <code>walk</code>：</b><br>
+      旧的 <code>us_span=2000</code> 会让「1° 指令 ≈ 1.667° 物理角」，直接发
+      <code>walk</code> / <code>demo</code> / <code>pose crouch</code> 会甩过头撞结构；
+      站姿没事只是因为那时偏移量为 0。<br>
+      <b>正确顺序：</b>① 导出命令清单存档 + 断电重启验 NVS →
+      ② 烧写 <code>span=1200</code> 的固件（助手已编译好）→
+      ③ 重连标定台点「读取板子状态」，在 ⑤ 的「🔄 trim 换算」里点「写入换算值 + save」→
+      ④ 把机身垫高、四脚悬空：<code>status</code> 看峰值角速度 / <code>clampN</code> →
+      <code>demo</code> → <code>walk 100</code> → <code>stop</code>。<br>
+      <b>首试别用 <code>walk 20</code></b>：speed 只缩放前后步幅、不缩放 14mm 抬脚，20% 时前后仅 4.4mm 会被齿隙吃掉，看起来像原地高抬腿，不是故障。要调慢请改 <code>period</code>。
+      完整判据与公式见 <code>docs/13-M1首次试走检查清单.md</code>。
+    </div>
+  </section>
+
+  <p class="foot">Spider8 标定台 · 通过浏览器 Web Serial 直连 USB Serial/JTAG · 命令与 firmware/main/console.c 一致</p>
+</div>
+
+<script>
+/* ===== 常量 ===== */
+const LEG = [
+  ["FL","髋"],["FL","膝"],["FR","髋"],["FR","膝"],
+  ["RL","髋"],["RL","膝"],["RR","髋"],["RR","膝"]
+];
+const CN  = ["左前·髋","左前·膝","右前·髋","右前·膝","左后·髋","左后·膝","右后·髋","右后·膝"];
+const REF = [19,-38,19,-38,19,-38,19,-38];   // 装配基准关节角（trim 零点）：髋19° 膝−38°，不要改
+/* 2026-11-13 起固件「默认站姿」改为 膝−48°/髋24°，比装配基准多折 10°。
+ * 站姿时 sv = 90° + (站姿关节角 − REF) × dir + trim，
+ * 髋偏移 +5°、膝偏移 −10°（髋 = −膝/2）。装配基准本身没动，trim 不用重标。 */
+const STAND_OFF = [5,-10,5,-10,5,-10,5,-10];
+
+/* ===== 连接通道 =====
+ * linkMode: 'wifi'（HTTP /api/cmd，与串口共用同一张命令表）| 'serial'（Web Serial）| null
+ * connected 保持原来的语义：所有按钮、滑块、快捷键只认这一个开关。
+ * WiFi 地址与 console.html 共用 localStorage，那边配过网这边打开就能直接连。 */
+const isHttp = /^https?:$/.test(location.protocol);
+/* 有些浏览器在 file:// 下禁 localStorage，读写都兜住，别让整个页面挂掉 */
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+/* 允许 ?api=http://192.168.0.xxx 直接带地址进来（控制台 / 快捷方式用）。
+ * localStorage 是按「打开方式」隔离的：从板子内嵌页 http://<IP> 存的地址，
+ * 双击本地 file:// 打开时读不到，这就是「console.html 能连、标定台连不上」
+ * 的主因之一。别指望共享记录，要么扫描网段，要么显式带地址。 */
+const urlApi = (function(){
+  try{ const v=new URLSearchParams(location.search).get('api');
+       return (v && /^https?:\/\//.test(v)) ? v.replace(/\/$/,'') : null; }
+  catch(e){ return null; }
+})();
+let apiBase = isHttp ? '' : (urlApi || lsGet('spider8.sta') ||
+                              lsGet('spider8.api') || 'http://192.168.0.102');
+let linkMode=null, connected=false;
+let port=null, reader=null, writer=null;
+let wifiAuto=false, wifiBusy=false, wifiFail=0;
+const wifiQueue=[];
+function baseLabel(){ return apiBase || ('http://' + location.host); }
+
+let cur=0;
+const trim=[0,0,0,0,0,0,0,0];
+const dirv=[1,1,1,1,1,1,1,1];
+let rawBuf="";
+let sendTimer=null, lastSend=0;
+let gotReply=false;
+/* dir 安全翻转状态：防止旧 status 回显把刚翻转的方向覆盖回去 */
+let dirBusy=false, dirGuardChan=-1, dirGuardUntil=0;
+
+/* ===== 工具函数 ===== */
+const $ = id => document.getElementById(id);
+function fmt(v){ return (v>=0?"+":"") + v.toFixed(1); }
+const TRIM_LIMIT=50;   /* 与 config.h 的 SERVO_TRIM_LIMIT_DEG 一致：360° 舵机换算后髋需到 −43° */
+function clamp(v){ return Math.max(-TRIM_LIMIT, Math.min(TRIM_LIMIT, v)); }
+
+function log(text, cls){
+  const t=$("term");
+  const span=document.createElement("span");
+  if(cls) span.className=cls;
+  span.textContent=text;
+  t.appendChild(span);
+  // 限制长度，避免长跑爆内存
+  while(t.childNodes.length>400) t.removeChild(t.firstChild);
+  t.scrollTop=t.scrollHeight;
+}
+function logSys(s){ log("[系统] "+s+"\n","sys"); }
+function logErr(s){ log("[错误] "+s+"\n","er");
+  const e=$("errbox"); e.style.display="block"; e.textContent=s; }
+
+/* ===== 统一的命令出口 =====
+ * 串口：写一行 CRLF；WiFi：GET /api/cmd?c=...，回显文本喂给同一套 parseStatus()。
+ * 两条通道的 status 表格逐字相同（固件 cli_exec → cli_out → 捕获缓冲），
+ * 所以下面的 trim/dir 解析、⑤ 换算快照、dir 防覆盖逻辑一行都不用改。 */
+async function send(cmd){
+  if(linkMode==='wifi') return wifiSend(cmd);
+  if(linkMode==='serial' && writer){
+    try{
+      const enc=new TextEncoder();
+      await writer.write(enc.encode(cmd+"\r\n"));   // ESP console 用 CRLF
+      log(">> "+cmd+"\n","tx");
+    }catch(e){ logErr("发送失败："+e.message); }
+    return;
+  }
+  logSys("还没连接开发板，命令没发出去： "+cmd);
+}
+
+/* ---- WiFi 传输层 ---- */
+function httpRequest(path, timeout){
+  const ctrl=new AbortController();
+  const timer=setTimeout(()=>ctrl.abort(), timeout||8000);
+  return fetch(apiBase+path, {signal:ctrl.signal, cache:'no-store'})
+    .then(r=>r.text().then(t=>({text:t, status:r.status})))
+    .finally(()=>clearTimeout(timer));
+}
+
+/* 只认真正回 pong 的那个地址：别人的登录页 / 强制门户 / 404 都不算。
+ * timeoutMs 供网段扫描用短超时，否则 254 个地址会等太久。 */
+function pingAt(base, timeoutMs){
+  const ctrl=new AbortController();
+  const timer=setTimeout(()=>ctrl.abort(), timeoutMs||1500);
+  return fetch(base+'/api/ping', {signal:ctrl.signal, cache:'no-store'})
+    .then(r=>r.text().then(txt=> r.status===200 && txt.trim()==='pong'))
+    .catch(()=>false)
+    .finally(()=>clearTimeout(timer));
+}
+
+/* 把 HTTP 回显当作串口数据一样处理：既显示，也喂给 status 表格解析 */
+function feedReply(text){
+  if(!text) return;
+  log(text,"");
+  rawBuf=(rawBuf+text).slice(-30000);
+  parseStatus(rawBuf);
+}
+
+/* 命令串行排队：固件 cli_exec 有执行锁，并发 fetch 会互相等，
+ * 拖滑块时节流的 80ms 也可能比一次 HTTP 往返短，排队才不会把板子打爆。
+ * 每条 send() 返回的 Promise 在「这条命令回显到手」后才 resolve，
+ * 所以自检 / dir 翻转里的 await 节奏反而比串口更准。 */
+function wifiSend(cmd){
+  return new Promise(resolve=>{
+    wifiQueue.push({cmd:cmd, resolve:resolve});
+    pumpWifi();
+  });
+}
+async function pumpWifi(){
+  if(wifiBusy || linkMode!=='wifi') return;
+  const item=wifiQueue.shift();
+  if(!item) return;
+  wifiBusy=true;
+  try{
+    log(">> "+item.cmd+"\n","tx");
+    const r=await httpRequest('/api/cmd?c='+encodeURIComponent(item.cmd), 35000);
+    if(r.status!==200) logErr("命令「"+item.cmd+"」返回 HTTP "+r.status);
+    feedReply(r.text);
+  }catch(e){
+    logErr("WiFi 命令发送失败："+(e&&e.message?e.message:e));
+  }finally{
+    wifiBusy=false;
+    item.resolve();
+    if(wifiQueue.length) pumpWifi();
+  }
+}
+/* 切通道时把还在排队的命令全部放行，避免 await send() 永远卡住 */
+function drainWifiQueue(){
+  wifiQueue.splice(0).forEach(it=>it.resolve());
+}
+
+/* 拖动时节流：最多约每 80ms 发一条，且保证最后一次一定发出去。
+ * 注意：排队的命令字符串在构造时就绑定了当时的通道号。若拖完滑块立刻切通道，
+ * 延时到达的命令会打到「旧通道」，用户就会看到别的舵机莫名动一下。
+ * 因此切换通道 / 翻方向 / 归位之前，一律先 flush 掉队列。 */
+let pendingTrimCmd=null;
+function sendTrimThrottled(v){
+  const cmd="trim "+cur+" "+fmt(v);
+  const now=Date.now();
+  if(now-lastSend>=80){
+    lastSend=now;
+    send(cmd);
+  }else{
+    clearTimeout(sendTimer);
+    pendingTrimCmd=cmd;
+    sendTimer=setTimeout(()=>{
+      sendTimer=null;
+      lastSend=Date.now();
+      const c=pendingTrimCmd; pendingTrimCmd=null;
+      if(c) send(c);
+    }, 90);
+  }
+}
+function flushPendingTrim(){
+  if(sendTimer){ clearTimeout(sendTimer); sendTimer=null; }
+  if(pendingTrimCmd){
+    const c=pendingTrimCmd; pendingTrimCmd=null;
+    lastSend=Date.now();
+    send(c);              /* 仍发给构造它时的通道，绝不串到新选中的通道 */
+  }
+}
+
+/* ===== 连接 / 断开 ===== */
+function setBadge(ok, txt, wait){
+  const b=$("badge");
+  b.className="badge"+(wait?" wait":(ok?" on":""));
+  $("badgeTxt").textContent=txt;
+}
+
+/* 自动寻址：双击本地文件打开时不用手填地址。
+ * 候选顺序和 console.html 一致：上次配网成功的地址 → 手填过的 → 本机实测过的 → 热点兜底。
+ * 192.168.4.1 只排最后，且必须先回 pong 才认（那边常是交换机登录页）。 */
+function probeApiBase(){
+  /* 「用 http 打开」不等于「打开的是板子里的网页」：也可能是本地静态服务器、
+   * 编辑器预览面板（如 127.0.0.1:8571）。只有同源 /api/ping 真回 pong 才认，
+   * 否则照样走自动寻址，别把预览服务器的 404 当成机器狗。 */
+  if(isHttp){
+    pingAt('').then(ok=>{
+      if(ok){
+        $("addrBar").style.display="none";
+        connectWifi('');
+      }else{
+        apiBase=lsGet('spider8.sta') || lsGet('spider8.api') || 'http://192.168.0.102';
+        const inp=$("apiInput"); if(inp) inp.value=apiBase;
+        findFromCandidates();
+      }
+    });
+    return;
+  }
+  findFromCandidates();
+}
+
+/* 每次寻址领一个序号；手动填地址 / 改用 USB 时 stopProbe() 让旧扫描立刻作废，
+ * 免得后台扫到一个地址又悄悄把用户刚选的通道顶掉。 */
+let probeSeq=0;
+function stopProbe(){ probeSeq++; }
+
+function findFromCandidates(){
+  const mySeq=++probeSeq;
+  const alive=()=>mySeq===probeSeq;
+  $("addrBar").style.display="block";
+  $("addrMsg").textContent="正在自动寻找机器狗…";
+  const cand=[urlApi, lsGet('spider8.sta'), lsGet('spider8.api'),
+              'http://192.168.0.102','http://192.168.4.1'];
+  const list=[];
+  cand.forEach(c=>{ if(c && list.indexOf(c)<0) list.push(c); });
+
+  /* 记住的地址所在网段优先扫：路由器 DHCP 换 IP 一般只换最后一段。
+   * 只有 4 个写死候选时，板子 IP 一变就再也连不上（console.html 是从板子
+   * 内嵌页同源打开的，压根不需要找地址，所以「它能连、标定台不能连」）。 */
+  const nets=[];
+  list.forEach(c=>{
+    const m=/^https?:\/\/(\d+\.\d+\.\d+)\.\d+/.exec(c||'');
+    if(m && nets.indexOf(m[1])<0) nets.push(m[1]);
+  });
+  ['192.168.0','192.168.1','192.168.4'].forEach(n=>{
+    if(nets.indexOf(n)<0) nets.push(n);
+  });
+
+  const tryBase=async b=>(await pingAt(b)) && (await connectWifi(b));
+
+  (async function run(){
+    for(const b of list){
+      if(!alive()) return;
+      if(await tryBase(b)) return;
+    }
+    /* 固定候选全落空 → 按网段批量探，每批 64 个、600ms 超时，找到即停 */
+    for(const net of nets){
+      for(let start=1; start<255; start+=64){
+        if(!alive()) return;
+        const end=Math.min(start+63,254);
+        $("addrMsg").textContent="没找到记住的地址，正在搜索 "+net+"."+start+"~"+end+" …";
+        const batch=[];
+        for(let i=start;i<=end;i++){
+          const b='http://'+net+'.'+i;
+          if(list.indexOf(b)<0) batch.push(b);
+        }
+        const hits=await Promise.all(batch.map(async b=>
+          (await pingAt(b, 600)) ? b : null));
+        const hit=hits.find(x=>x);
+        if(hit && await connectWifi(hit)) return;
+      }
+    }
+    if(!alive()) return;
+    $("addrMsg").innerHTML="⚠ 没自动找到机器狗（已扫过常见网段）。请展开 ① 的「设置 / WiFi 连不上看这里」填板子地址"+
+      "（插 USB 敲 <code>wifidiag</code> 可查），并确认板子已通电、和电脑在同一个 WiFi、<b>VPN 已退出</b>。"+
+      "<br>也可以用 <code>?api=http://板子IP</code> 直接把地址带进本页。";
+    logSys("自动寻找失败：候选地址和常见网段都没回 pong。可点「🔌 改用 USB 串口」，或在 ① 的设置里手填板子地址。");
+  })();
+}
+
+/* 连上后：读一次 status 拿 8 路 trim/dir，再读 /api/net 记下板子当前地址 */
+async function connectWifi(base){
+  if(!(await pingAt(base))) return false;
+  if(linkMode==='serial') await stopSerial();
+  apiBase=base;
+  if(base) lsSet('spider8.sta', base);
+  linkMode='wifi'; wifiAuto=true; wifiFail=0;
+  connected=true; setUI(true);
+  $("addrBar").className="netbar on";
+  $("addrMsg").innerHTML="✓ 已通过 <b>WiFi</b> 连上机器狗：<code>"+baseLabel()+"</code>。"+
+    "下面所有按钮和滑块都走无线，命令与串口完全一样。";
+  const go=$("btnGoBoard");
+  if(base){ go.style.display=""; go.onclick=()=>window.open(base,'_blank'); }
+  else go.style.display="none";
+  const inp=$("apiInput"); if(inp && base) inp.value=base;
+  logSys("已连上 WiFi："+baseLabel()+"（命令走 /api/cmd，和串口共用同一张命令表）。正在读回板子里的 trim/dir…");
+  logSys("⚡ 动手前确认：PCA9685 的 V+ 已接 5V 并通电、三方共地、OE 已接 GND（低电平使能）。"+
+         "V+ 没电或 OE 悬空时命令回显、status 全都正常，但 8 个舵机一个都不会动。");
+  send("status");
+  refreshNet();
+  return true;
+}
+
+function refreshNet(){
+  if(linkMode!=='wifi') return;
+  return httpRequest('/api/net', 4000).then(r=>{
+    if(r.status!==200) return;
+    let n; try{ n=JSON.parse(r.text); }catch(e){ return; }
+    const url=n.console || ('http://'+n.ap_ip);
+    if(n.sta_up){
+      lsSet('spider8.sta', 'http://'+n.sta_ip);
+      $("netSummary").textContent="板子已连家里路由 ["+n.sta_ssid+"] · 信号 "+n.rssi+
+        " dBm · 控制台 "+url+"（热点已自动关闭）";
+    }else if(n.sta_configured){
+      $("netSummary").textContent="配了 ["+n.sta_ssid+"] 但暂时没连上，仅热点 "+n.ap_ip+" 可用";
+    }else{
+      $("netSummary").textContent="当前仅机器狗热点 "+n.ap_ssid+" @ "+n.ap_ip+"（连它时电脑不能上网）";
+    }
+  }).catch(()=>{});
+}
+
+async function stopSerial(){
+  if(!port) return;
+  try{ if(reader) await reader.cancel(); }catch(_){}
+  try{ if(writer){ writer.releaseLock(); writer=null; } }catch(_){}
+  try{ await port.close(); }catch(_){}
+  port=null;
+}
+
+async function disconnect(){
+  const wasSerial=(linkMode==='serial');
+  wifiAuto=false; drainWifiQueue();
+  if(wasSerial) await stopSerial();
+  linkMode=null; connected=false; setUI(false);
+  logSys(wasSerial?"已断开 USB 串口":"已断开 WiFi");
+}
+
+/* USB 串口通道（WiFi 不通时的兜底，原逻辑保留） */
+async function connect(){
+  stopProbe();               /* 手动改用 USB：后台网段扫描立即作废 */
+  if(!("serial" in navigator)){
+    logErr("当前浏览器不支持 Web Serial。请用 Edge 或 Chrome 打开本页；WiFi 连接不需要串口，可照常使用。");
+    return;
+  }
+  if(linkMode==='wifi'){
+    wifiAuto=false; drainWifiQueue();
+    linkMode=null; connected=false; setUI(false);
+    logSys("已切离 WiFi，准备用 USB 串口连接。");
+  }
+  $("errbox").style.display="none";
+  try{
+    port=await navigator.serial.requestPort();
+    await port.open({baudRate:115200});
+    /* 关键：ESP32-S3 的 USB Serial/JTAG 把 DTR 映射成复位，
+       不释放会"能开端口但零字节"。 */
+    try{
+      await port.setSignals({dataTerminalReady:false, requestToSend:false});
+    }catch(e){ logSys("setSignals 不可用（"+e.message+"），若收不到数据请重连一次"); }
+
+    writer=port.writable.getWriter();
+    linkMode='serial';
+    connected=true;
+    gotReply=false;
+    setUI(true);
+    logSys("已连接。波特率 115200（USB 虚拟串口，实际无所谓）。正在等板子回应…");
+    logSys("⚡ 动手前确认：PCA9685 的 V+ 端子已接 5V 并通电、三方共地、OE 已接 GND（低电平使能，悬空可能关掉全部输出）。V+ 没电或 OE 悬空时，串口和 status 照样正常，但 8 个舵机一个都不会动。");
+    readLoop();
+
+    port.addEventListener?.("disconnect", ()=>{
+      if(connected && linkMode==='serial'){
+        linkMode=null; connected=false; port=null; writer=null;
+        setUI(false);
+        logErr("USB 断开了（打开串口那一瞬间板子复位会重新枚举）。请再点一次「改用 USB 串口」；反复发生就拔插一次 USB，或点「🌐 WiFi 连接」换无线。");
+      }
+    });
+
+    /* 握手自检：等 USB 稳定后发一条 status。
+       ESP32-S3 原生 USB Serial/JTAG 在打开串口被 DTR 复位时会断开重连，
+       表现为"连上了但一个字都收不到"，所以这里主动探一次并给排查提示。 */
+    setTimeout(()=>{ if(connected) send("status"); }, 700);
+    setTimeout(()=>{
+      if(connected && !gotReply){
+        logErr("连上了但板子没回应。依次查：① 端口是否被 idf.py monitor / 串口助手占用；② 拔插一次 USB 再重连；③ 选端口时认准「USB 串行设备」(VID 303A)，别选 CH340 那个 UART 口。");
+      }
+    }, 3200);
+  }catch(e){
+    logErr("连接失败："+e.message+"（若提示端口被占用，先关掉 idf.py monitor 等其它串口程序）");
+    try{ if(port) await port.close(); }catch(_){}
+    port=null;
+  }
+}
+
+async function readLoop(){
+  const dec=new TextDecoder();
+  while(port && port.readable){
+    try{
+      reader=port.readable.getReader();
+      while(true){
+        const {value,done}=await reader.read();
+        if(done) break;
+        const txt=dec.decode(value,{stream:true});
+        gotReply=true;
+        log(txt,"");
+        rawBuf=(rawBuf+txt).slice(-30000);
+        parseStatus(rawBuf);
+      }
+    }catch(e){
+      if(connected) logErr("串口读取中断："+e.message);
+    }finally{
+      try{ if(reader){ reader.releaseLock(); } }catch(_){}
+      reader=null;
+    }
+    if(!port || !port.readable) break;
+  }
+}
+
+/* disconnect() 已移到上面的「连接 / 断开」段（两条通道统一处理）。 */
+
+/* 解析 status 的表格行： 0 FL  髋   24.0°   53.2°  +1  −41.7°
+ * status 表头前新增的「站姿 膝 −48.0° / 髋 24.0°」行不影响这里：从表头往后扫即可。
+ * 只认「最后一份」status 表格：rawBuf 是累积的全部串口回显，
+ * 从头逐行扫会把几十秒前的旧表格也算进来，刚翻转的 dir 会被旧值覆盖回去，
+ * 用户以为没生效就会反复点，舵机跟着反复跳。 */
+function parseStatus(buf){
+  const lines=buf.split(/\r?\n/);
+  let head=-1;
+  for(let i=lines.length-1;i>=0;i--){
+    if(/^\s*(?:spider8>\s*)?CH\s+腿\s+关节/.test(lines[i])){ head=i; break; }
+  }
+  if(head<0) return;
+
+  let n=0;
+  for(let i=head+1;i<lines.length && i<=head+12;i++){
+    const m=lines[i].match(/([0-7])\s+(FL|FR|RL|RR)\s+(髋|膝)\s+(-?[\d.]+)°\s+(-?[\d.]+)°\s+([+-]?\d)\s+([+-]?[\d.]+)°/);
+    if(!m) continue;
+    const j=+m[1];
+    if(j>=0&&j<8){
+      trim[j]=parseFloat(m[7]);
+      /* 刚点完 dir 时，先前发出的旧 status 可能还在路上，短暂保护本通道 */
+      if(!(j===dirGuardChan && Date.now()<dirGuardUntil)) dirv[j]=parseInt(m[6],10);
+    }
+    n++;
+  }
+  if(n>0){
+    spanSnapshot=trim.slice();      /* 换算工具的源快照：板子里真实的旧 trim */
+    renderTable(); renderChans(); renderSlider(); renderSpanConv();
+  }
+}
+
+/* ===== 渲染 ===== */
+function renderChans(){
+  const box=$("chans");
+  box.innerHTML="";
+  for(let j=0;j<8;j++){
+    const d=document.createElement("div");
+    d.className="chan"+(j===cur?" sel":"");
+    d.innerHTML='<div class="n">CH'+j+'</div><div class="l">'+CN[j]+'</div>'+
+                '<div class="v">'+fmt(trim[j])+'° / '+dirv[j]+'</div>';
+    d.onclick=()=>selectChan(j);
+    box.appendChild(d);
+  }
+}
+function renderTable(){
+  const tb=$("tbody");
+  tb.innerHTML="";
+  for(let j=0;j<8;j++){
+    const tr=document.createElement("tr");
+    if(j===cur) tr.className="cur";
+    tr.innerHTML="<td>CH"+j+"</td><td>"+CN[j]+"</td>"+
+      "<td class='mono'>"+fmt(trim[j])+"°</td>"+
+      "<td class='mono'>"+(dirv[j]>0?"+1":"−1")+"</td>";
+    tb.appendChild(tr);
+  }
+}
+
+/* ===== ⑤ us_span 改变后的 trim 换算 =====
+ * 站姿时 us = 1500 + trim × us_span/180；要让脉宽不变：
+ *   trim_new = trim_old × span_old / span_new
+ * 本机 2026-11-11 实测 500~2900µs = 360° → span 2000→1200，倍率 1.6667。
+ * 源数据用「读取板子状态」那一刻的快照，保证重复点写入不会累积放大。 */
+let spanSnapshot=null;
+function spanConvVals(){
+  const so=Math.max(1,parseFloat($("spanOld").value)||2000);
+  const sn=Math.max(1,parseFloat($("spanNew").value)||1200);
+  return {so:so,sn:sn,k:so/sn};
+}
+function renderSpanConv(){
+  const c=spanConvVals(), body=$("spanConvBody"), warn=$("spanConvWarn");
+  $("spanConvK").textContent=c.k.toFixed(4);
+  body.innerHTML="";
+  if(spanSnapshot===null){
+    body.innerHTML="<tr><td colspan='4' class='muted'>还没读到板子状态：先连接，再点「📋 读取板子状态」。</td></tr>";
+    warn.style.display="none"; return;
+  }
+  let over=0;
+  for(let j=0;j<8;j++){
+    const nv=Math.round(spanSnapshot[j]*c.k*10)/10;
+    const bad=Math.abs(nv)>TRIM_LIMIT; if(bad) over++;
+    const tr=document.createElement("tr");
+    tr.innerHTML="<td>CH"+j+"</td><td>"+CN[j]+"</td><td class='mono'>"+fmt(spanSnapshot[j])+"°</td>"+
+      "<td class='mono'>"+(bad?"<span style='color:var(--danger)'>":"<b>")+fmt(nv)+"°"+
+      (bad?" ⚠ 超 ±"+TRIM_LIMIT+"°</span>":"</b>")+"</td>";
+    body.appendChild(tr);
+  }
+  warn.textContent="⚠ 有 "+over+" 路换算后超过 trim 上限 ±"+TRIM_LIMIT+"°（固件会夹到 "+TRIM_LIMIT+"°）：这些通道请把舵机臂拔下重插到 1500µs 站姿，或用 ④ 滑块重新对齐。";
+  warn.style.display=over?"block":"none";
+}
+function renderSlider(){
+  const v=trim[cur];
+  $("slider").value=v;
+  $("bigVal").innerHTML=fmt(v)+"<small>°</small>";
+  const sv=90 + STAND_OFF[cur]*dirv[cur] + v;   // 站姿 = 装配基准 + 站姿偏移，不再等于 90°+trim
+  $("readout").innerHTML=
+    "当前选中 <b>CH"+cur+" "+CN[cur]+"</b>（装配基准 "+REF[cur]+"°，站姿偏移 "+(STAND_OFF[cur]>0?"+":"")+STAND_OFF[cur]+"°）<br>"+
+    "站姿时舵机角 = 90° + 站姿偏移×dir + trim = <b>"+sv.toFixed(1)+"°</b>"+
+    (sv<0||sv>180?" <span style='color:var(--danger)'>⚠ 超出 0~180° 硬限位</span>":"")+"<br>"+
+    "实际发出：<code>trim "+cur+" "+fmt(v)+"</code>　方向：<code>dir "+cur+" "+dirv[cur]+"</code>";
+  const b=$("btnDir");
+  if(dirBusy){
+    b.textContent="🔁 翻转中…先让全机回站姿";
+  }else{
+    b.textContent="🔁 方向 dir："+(dirv[cur]>0?"+1":"−1")+"（点一下安全翻转）";
+  }
+}
+
+function selectChan(j){
+  if(j!==cur) flushPendingTrim();   /* 别让上一条延时 trim 打到刚选中的通道 */
+  cur=j;
+  renderChans(); renderTable(); renderSlider();
+  logSys("选中 CH"+j+" "+CN[j]+"。先点「通电自检」确认它会动，再去 ③ 定脉宽范围与 90° 中位，最后拖 ④ 的滑块。");
+}
+
+function setUI(on){
+  const ids=["btnDisc","btnWiggle","btnStand","btnStatus","slider","btnM1","btnM05","btnZero","btnP05","btnP1",
+             "btnDir","btnSave","btnClear","btnClearAll","btnSpanRead","btnSpanApply",
+             "cmdInput","btnSend","btnPcaDiag",
+             "pwSlider","btnPwType","btnPwM100","btnPwM10","btnPwP10","btnPwP100",
+             "btnPw500","btnPw1000","btnPw1500","btnPw2000","btnPw2500",
+             "btnPw2700","btnPw2900","btnPw3000","btnPwScan",
+             "btnPwMin","btnPwMax","btnPwReset","btnPwMid","btnPwMidMeasured","btnPwOff"];
+  ids.forEach(id=>{ const el=$(id); if(el) el.disabled=!on; });
+  $("btnExport").disabled=false;      /* 导出命令清单不需要连接 */
+  $("btnConn").disabled=on || !("serial" in navigator);
+  $("btnWifi").disabled=false;        /* 连着也能点：重读状态 / 重新寻址 */
+  setBadge(on, on ? ('已连接 · '+(linkMode==='wifi'?'WiFi':'USB 串口')) : '未连接');
+
+  /* ⑤ 区状态条：把「按钮为什么是灰的」就地讲清楚，别让人对着一排灰按钮猜 */
+  const tip=$("sec5Tip"), tipTxt=$("sec5TipTxt"), go=$("btnGoConn");
+  if(tip&&tipTxt){
+    tip.className="connbar"+(on?" on":"");
+    if(on){
+      tipTxt.innerHTML="✓ <b>已连接（"+(linkMode==='wifi'?'WiFi':'USB 串口')+"）</b>：下面三个按钮现在可用。"+
+        "点「保存到板子」把 8 路 trim/dir 写进 NVS，断电不丢。";
+    }else{
+      const noApi=!("serial" in navigator);
+      tipTxt.innerHTML="⚠ <b>下面三个按钮现在故意是灰的</b>：还没连上开发板，命令发出去也没人接。"+
+        (noApi
+          ? "<br>本环境不支持串口：页面会自动找 WiFi；没找到就在 ① 的「设置」里填板子地址，或换 Edge / Chrome 打开本文件。"
+          : "<br>页面会自动通过 WiFi 连板子；没连上就回 ① 点「🌐 WiFi 连接」重新寻找，或插 USB 线点「改用 USB 串口」。烧写时点过「断开」的话，回来要重新连一次。");
+    }
+    if(go) go.style.display=on?"none":"inline-block";
+  }
+}
+
+function setTrim(v){
+  trim[cur]=clamp(Math.round(v*2)/2);   // 量化到 0.5°
+  renderChans(); renderTable(); renderSlider();
+  sendTrimThrottled(trim[cur]);
+}
+
+/* ===== 通电自检：让选中通道真的动起来 =====
+ * pose stand 在已经是站姿时不会改变任何角度，所以看不到动作。
+ * 这里改用 cal 点动（进 MODE_MANUAL），在基准角 ±25° 之间来回摆两次，
+ * 既能一眼确认"电通了没"，又顺便能看出转动方向。 */
+let wiggleBusy=false;
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+async function wiggle(){
+  if(!connected){ logSys("先连上开发板再做自检。"); return; }
+  if(wiggleBusy){ logSys("自检正在进行，等它摆完。"); return; }
+  wiggleBusy=true;
+  const j=cur, base=REF[j], step=25, b=$("btnWiggle");
+  b.disabled=true; b.textContent="🔍 自检中…盯住 CH"+j;
+  logSys("通电自检开始：CH"+j+" 会在 "+base.toFixed(1)+"° ↔ "+(base+step).toFixed(1)+"° 之间来回摆 2 次（约 4 秒）。请盯住这只舵机。");
+  try{
+    for(let k=0;k<2;k++){
+      await send("cal "+j+" "+(base+step).toFixed(1)); await sleep(900);
+      await send("cal "+j+" "+base.toFixed(1));       await sleep(900);
+    }
+    await send("pose stand");
+    logSys("自检结束，已回站姿。CH"+j+" 全程没动 → 按 ② 黄框查 V+ 5V / 共地 / OE / 线序；可敲 cal 0 40 + status，舵机角应是 111°（变了=软件通、问题在硬件）；动了 → 硬件没问题，先去 ③ 定脉宽范围与 90° 中位，再拖 ④ 的滑块。");
+  }catch(e){ logErr("自检中断："+e.message); }
+  finally{
+    wiggleBusy=false;
+    b.disabled=!connected;
+    b.textContent="🔍 通电自检：让选中的舵机来回摆 2 次";
+  }
+}
+
+/* ===== 事件 ===== */
+$("btnConn").onclick=connect;
+$("btnWiggle").onclick=wiggle;
+$("btnDisc").onclick=disconnect;
+
+/* WiFi：已连着就重读一次 status；没连上就重新自动寻址 */
+$("btnWifi").onclick=async()=>{
+  if(connected && linkMode==='wifi'){
+    send("status"); logSys("已重新读取板子状态。"); return;
+  }
+  if(linkMode==='serial') await disconnect();
+  $("addrMsg").textContent="正在自动寻找机器狗…";
+  probeApiBase();
+};
+$("btnProbe").onclick=$("btnWifi").onclick;
+$("btnSaveApi").onclick=async()=>{
+  stopProbe();               /* 手填优先，别让扫描结果覆盖用户的选择 */
+  const v=$("apiInput").value.trim().replace(/\/$/,'');
+  if(!v){ logSys("请先填控制台地址：插 USB 线敲 wifidiag 可查板子拿到的 IP。"); return; }
+  if(linkMode==='serial') await disconnect();
+  if(await connectWifi(v)){
+    logSys("已按手填地址连上："+v);
+  }else{
+    logErr("填的地址 "+v+" 没回应 pong：可能不是机器狗（跳出登录页就是别的设备）、板子没通电，或 VPN 抢了路由。");
+  }
+};
+$("slider").addEventListener("input",e=>setTrim(parseFloat(e.target.value)));
+$("btnM1").onclick =()=>setTrim(trim[cur]-1);
+$("btnM05").onclick=()=>setTrim(trim[cur]-0.5);
+$("btnP05").onclick=()=>setTrim(trim[cur]+0.5);
+$("btnP1").onclick =()=>setTrim(trim[cur]+1);
+$("btnZero").onclick=()=>setTrim(0);
+/* ===== 安全翻转 dir =====
+ * 固件：sv = 90 + (关节角 − 站立基准角) × dir + trim
+ * 站姿时 (关节角 − 基准角)=0 → dir 不影响舵机角。
+ * 非站姿（cal 手动 / walk / 刚退出 pwm 还在限速回位）时差值 ≠0，
+ * 翻转会把腿镜像过去，舵机猛转；servo_apply 每拍又刷新全部 8 路，
+ * 于是看起来「别的舵机也在动」。
+ * 所以翻转前必须先把板子带回站姿并等姿态收敛，且只发选中通道这一条命令。 */
+async function safeFlipDir(){
+  if(!connected){ logSys("先连上开发板再翻方向。"); return; }
+  if(dirBusy){ logSys("方向翻转正在进行，等它结束。"); return; }
+  if(wiggleBusy||pwScanRunning||pwTypeRunning){
+    logSys("自检 / 脉宽扫描还没结束，等它跑完再翻方向（否则会打断归位）。"); return;
+  }
+  dirBusy=true;
+  const b=$("btnDir"), tip=$("dirTip"), j=cur, next=dirv[j]>0?-1:1;
+  b.disabled=true; renderSlider();
+  tip.textContent="① 退出 pwm/cal → ② 回站姿 → ③ 等姿态收敛 → ④ 改 dir";
+  logSys("安全翻转 CH"+j+"：先退出 pwm / cal 测试模式并回站姿，等 600ms 让姿态收敛，再只给 CH"+j+" 发一条 dir 命令。");
+  flushPendingTrim();                 /* 清掉排队中的 trim，避免归位时窜出旧命令 */
+  try{
+    await send("pwm off");            /* 没在 raw 模式也无害：固件只是再站一次 */
+    await send("cal off");            /* 退出手动点动（否则关节角 ≠ 基准角） */
+    await send("pose stand");
+    tip.textContent="③ 等姿态收敛（600ms）…";
+    await sleep(600);                 /* rate_limit 11°/拍 + servo 12°/拍，足够收敛 */
+    dirv[j]=next;
+    dirGuardChan=j; dirGuardUntil=Date.now()+2000;
+    renderChans(); renderTable();
+    await send("dir "+j+" "+next);   /* 全程唯一一条会影响舵机的标定命令，只打这一路 */
+    tip.textContent="④ 已改 dir，正在读回确认…";
+    logSys("CH"+j+" 方向已设为 "+next+"（只发了一条命令、只改这一路）。板子现在停在站姿，8 只舵机都不该转动。");
+    await sleep(120);
+    await send("status");             /* 读回确认；2 秒内不会被旧回显覆盖方向 */
+  }catch(e){ logErr("方向翻转中断："+e.message); }
+  finally{
+    dirBusy=false;
+    b.disabled=!connected;
+    renderSlider();
+    tip.textContent="翻转前后舵机不该动；按钮会先自动让全机回站姿。";
+  }
+}
+$("btnDir").onclick=safeFlipDir;
+$("btnStand").onclick=()=>{ send("pose stand"); logSys("已回站姿。注意：本来就在站姿时，8 路角度不变，舵机不会动——这是正常的。想看它动请点「通电自检」或拖滑块。"); };
+$("btnStatus").onclick=()=>send("status");
+$("btnPcaDiag").onclick=()=>send("pcadiag");
+/* ⑤ 区「回 ① 去连接」：滚回顶部并短暂高亮，不代用户点连接（选端口必须由人手选） */
+$("btnGoConn").onclick=()=>{
+  const s=$("secConn");
+  if(s){
+    if(s.scrollIntoView) s.scrollIntoView({behavior:"smooth",block:"start"});
+    s.style.boxShadow="0 0 0 3px rgba(15,110,86,.35)";
+    setTimeout(()=>{ s.style.boxShadow=""; },1600);
+  }
+  logSys("请在 ① 点「🌐 WiFi 连接」自动寻找机器狗；WiFi 不通再插 USB 线点「改用 USB 串口」。显示「已连接」后 ⑤ 的按钮会自动亮。");
+};
+$("spanOld").addEventListener("input",renderSpanConv);
+$("spanNew").addEventListener("input",renderSpanConv);
+$("btnSpanRead").onclick=()=>send("status");
+$("btnSpanApply").onclick=()=>{
+  if(spanSnapshot===null){ logSys("先点「📋 读取板子状态」拿到板子里的 trim，再做换算。"); return; }
+  if(!window.confirm("确认：板子里现在存的是「旧 us_span=2000 时代」的 trim 吗？\n\n"+
+     "若 status 里已经是 -41.7 / -43.3 / +30.0 这类换算后的值，请点「取消」——\n"+
+     "重复换算会把 trim 再放大 1.6667 倍，站姿会全歪。这个换算整个项目只做一次。")) return;
+  flushPendingTrim();
+  const c=spanConvVals();
+  for(let j=0;j<8;j++){
+    const nv=clamp(Math.round(spanSnapshot[j]*c.k*10)/10);
+    send("trim "+j+" "+fmt(nv));
+    trim[j]=nv;
+  }
+  send("save");
+  renderChans(); renderTable(); renderSlider();
+  logSys("已按 ×"+c.k.toFixed(4)+" 写入 8 路 trim 并 save。换算后脉宽不变，舵机不该跳；看到「标定值已写入 NVS」才算成功。");
+};
+$("btnSave").onclick=()=>{ send("save"); logSys("已发 save。看到「标定值已写入 NVS」才算成功。"); };
+$("btnClear").onclick=()=>{
+  flushPendingTrim();
+  for(let j=0;j<8;j++) send("trim "+j+" 0.0");
+  for(let j=0;j<8;j++) trim[j]=0;
+  renderChans(); renderTable(); renderSlider();
+  logSys("已把 8 路 trim 归零，dir 原样保留（还没 save）。方向不会被翻回去，舵机不该有动作。");
+};
+/* 全清会把已翻成 −1 的方向翻回 +1，非站姿下那些舵机会一起跳 —— 先归位再清 */
+$("btnClearAll").onclick=async()=>{
+  if(!connected){ logSys("先连上开发板。"); return; }
+  if(!window.confirm("确定要把 8 路的 trim 和 dir 全部清回默认值吗？\n已校准的方向会丢失，建议先点「导出命令清单」留档。")) return;
+  flushPendingTrim();
+  logSys("全清：先回站姿，等姿态收敛后再清 trim/dir（避免非站姿下方向翻转让 8 只一起跳）。");
+  await send("pwm off");
+  await send("cal off");
+  await send("pose stand");
+  await sleep(600);
+  for(let j=0;j<8;j++){ send("trim "+j+" 0.0"); send("dir "+j+" 1"); trim[j]=0; dirv[j]=1; }
+  renderChans(); renderTable(); renderSlider();
+  logSys("8 路 trim/dir 已恢复默认（还没 save）。");
+  await sleep(120);
+  await send("status");
+};
+$("btnExport").onclick=()=>{
+  let s="";
+  for(let j=0;j<8;j++) s+="trim "+j+" "+fmt(trim[j])+"\r\ndir "+j+" "+dirv[j]+"\r\n";
+  s+="save\r\n";
+  log("===== 标定命令清单（可复制存档）=====\r\n"+s,"sys");
+};
+$("btnTermClear").onclick=()=>{ $("term").innerHTML=""; rawBuf=""; };
+$("btnSend").onclick=()=>{
+  const v=$("cmdInput").value.trim();
+  if(v){ send(v); $("cmdInput").value=""; }
+};
+$("cmdInput").addEventListener("keydown",e=>{ if(e.key==="Enter") $("btnSend").click(); });
+
+document.addEventListener("keydown",e=>{
+  if(!connected) return;
+  if(document.activeElement && document.activeElement.tagName==="INPUT") return;
+  if(e.key==="ArrowLeft"){ e.preventDefault(); setTrim(trim[cur]-0.5); }
+  if(e.key==="ArrowRight"){ e.preventDefault(); setTrim(trim[cur]+0.5); }
+});
+
+/* ===== 三点测量向导：不需要串口，随时可用 ===== */
+$("btnMq").onclick=()=>{
+  const v=[$("mq1").value,$("mq2").value,$("mq3").value];
+  const box=$("mqOut");
+  let html="", bg="#eef6ff", bd="#5b9bd5";
+  if(v.indexOf("")>=0){
+    html="<b>还有没测的项</b><br>三点都量完再点「给出结论」。黑表笔请<b>始终点在舵机棕线</b>上，别用板子 GND。";
+  }else{
+    const tips=[];
+    if(v[0]==="bad") tips.push("<b>① 舵机没电</b>：先量 PCA9685 的 V+ 螺钉端子对 GND 有没有 5V（确认适配器开关已开），再量<b>通道排针</b>上标 V+ 的那根对 GND 有没有 5V。端子有、排针没有 → 板上跳线/焊盘没接通；两根都没有 → 供电没上来。同时逐根核对三根针的丝印顺序，各家不同。");
+    if(v[2]==="bad") tips.push("<b>③ 没共地</b>：适配器 GND、PCA9685 GND、ESP32 GND 必须用导线连在一起。共地缺失时信号没有参考电平，舵机完全收不到脉冲 —— 用板子 GND 当黑表笔量会「看起来全对」，很有迷惑性。");
+    if(v[1]==="bad") tips.push("<b>② 信号没送到舵机</b>：确认橙线插在标 <code>PWM</code>/<code>S</code> 的那根针、插的是 <b>0~7 号通道</b>（不是 8~15）、插头金属端子接触良好。板上量到 0.40V 但舵机端量不到，就是这一段断了。");
+    if(tips.length){
+      html="<b>问题出在「PCA9685 引脚 → 舵机」这一段，按下面逐条处理：</b><br><br>"+tips.join("<br><br>");
+      bg="#fff7e6"; bd="#e0a83b";
+    }else{
+      html="<b>三点全过：5V 和 PWM 信号都确实送到舵机了。</b><br>那只剩两种可能：<br>"+
+           "① <b>信号峰值只有 3.3V，这只舵机不认</b> —— PCA9685 输出高电平来自 VCC(3.3V)，不是 V+ 的 5V。加一块 3.3V→5V 电平转换模块（74AHCT125 / BSS138）串在信号线上，或换一只明确支持 3.3V 逻辑的舵机。<b>⚠ 别把 VCC 直接改接 5V</b>：SDA/SCL 会被上拉到 5V 打 ESP32 的 GPIO8/9。<br>"+
+           "② <b>舵机本身坏了</b> —— 换一只同型号试，或用 5V + 已知 PWM 源单独点一下。<br>"+
+           "另外记得敲 <code>pwm off</code> 退出 raw 模式；2500µs 别长时间保持，会让舵机顶在限位上发热。";
+      bg="#eaf7ed"; bd="#4a9d68";
+    }
+  }
+  box.style.background=bg;
+  box.style.borderLeft="4px solid "+bd;
+  box.innerHTML=html;
+  box.style.display="block";
+};
+
+/* ===== ③ 装机前基准：脉宽范围 + 站立中位 =====
+ * 用 console.c 的 `pwm <ch> <us>` 裸脉宽通道（固件上限已放宽到 3000µs）。
+ * 该命令进入 raw 模式冻结 servo_apply，测完必须 `pwm off`。
+ * 固件内部角：us = 1500 + (deg−90)×1200/180 → deg = 90 + (us−1500)×180/1200
+ * 【重要】这个「内部角」只是固件自己的 0~180 刻度，不是 360° 舵机的物理转角。
+ * 物理角按实测端点线性换算，未记端点时用本机实测 500~2900 = 0~360° 并标注。
+ */
+const PW_MIN=500, PW_MAX=3000;
+/* 本机 2026-11-11 实测：500~2900µs ↔ 0~360°，故 config.h 的 us_span=1200、us_mid=1500。
+ * 网页里凡是「固件内部角」都按这两个常量算，别再写死 2000。 */
+const FW_US_MID=1500, FW_US_SPAN=1200;
+const PW_DEFAULT_LO=500, PW_DEFAULT_HI=2900;
+let pwCur=1500, pwMin=null, pwMax=null;
+let pwScanRunning=false, pwScanAbort=false, pwTypeRunning=false;
+
+function pwSend(us){
+  pwCur=Math.max(PW_MIN,Math.min(PW_MAX,Math.round(us/10)*10));
+  $("pwSlider").value=pwCur;
+  renderPw();
+  send("pwm "+cur+" "+pwCur);
+}
+function pwPhysDeg(us){
+  const lo=(pwMin!==null)?pwMin:PW_DEFAULT_LO;
+  const hi=(pwMax!==null)?pwMax:PW_DEFAULT_HI;
+  if(hi<=lo) return null;
+  return (us-lo)*360/(hi-lo);
+}
+function renderPw(){
+  $("pwBig").innerHTML=pwCur+"<small>µs</small>";
+  const inner=90+(pwCur-FW_US_MID)*180/FW_US_SPAN;
+  const volt=3.3*pwCur/20000;
+  const phys=pwPhysDeg(pwCur);
+  const est=(pwMin===null||pwMax===null);
+  const minTxt=(pwMin===null?"未记录":pwMin+"µs");
+  const maxTxt=(pwMax===null?"未记录":pwMax+"µs");
+  const midTxt=(pwMin!==null&&pwMax!==null)?Math.round((pwMin+pwMax)/2)+"µs":"—";
+  $("pwReadout").innerHTML=
+    "当前 <b>CH"+cur+" "+CN[cur]+"</b>：<code>pwm "+cur+" "+pwCur+"</code><br>"+
+    "固件内部角 = 90 + (脉宽−"+FW_US_MID+")×180/"+FW_US_SPAN+" = <b>"+inner.toFixed(1)+"°</b>"+
+    " <span class='muted'>（内部 0~180 刻度，不是物理角）</span><br>"+
+    "360° 舵机物理角 ≈ <b>"+(phys===null?"—":phys.toFixed(1)+"°")+"</b> "+
+      (est?"<span class='muted'>（暂按本机实测 500~2900µs = 0~360°；记下两个端点后自动改用该通道实测值）</span>"
+          :"<span class='muted'>（按实测 "+pwMin+"~"+pwMax+"µs = 0~360° 线性换算）</span>")+"<br>"+
+    "万用表预期 ≈ <b>"+volt.toFixed(3)+"V</b>（信号峰值 3.3V × 占空比）<br>"+
+    "最小端点：<b>"+minTxt+"</b>　最大端点：<b>"+maxTxt+"</b>　实测中点：<b>"+midTxt+"</b>";
+  renderPwResult(); renderPwEx();
+}
+/* 线性外推：只适用于位置舵机，用来把「目测转了多少度」翻译成「该往哪个脉宽继续找」 */
+function renderPwEx(){
+  const lo=parseInt($("pwExLo").value,10);
+  const hi=parseInt($("pwExHi").value,10);
+  const deg=parseFloat($("pwExDeg").value);
+  const endBox=$("pwExEnd"), tip=$("pwExTip");
+  if(!isFinite(lo)||!isFinite(hi)||!isFinite(deg)||deg<=0||hi<=lo){
+    endBox.textContent="—";
+    tip.textContent="填三个数：起点脉宽、终点脉宽、这段区间里舵机实际转过的角度。";
+    return;
+  }
+  const perDeg=(hi-lo)/deg;
+  const end=Math.round((lo+perDeg*360)/10)*10;
+  endBox.textContent=end;
+  let s="每 1° 物理角 ≈ "+perDeg.toFixed(2)+"µs → 从 "+lo+"µs 走到 <b>"+end+"µs</b> 才是完整 360°。";
+  if(end>PW_MAX){
+    s+=" <b>理论端点超过当前 3000µs 上限</b>，需要再放宽固件并重烧。";
+  }else{
+    s+=" 下一步把滑块推到 "+end+"µs 附近，看舵机是不是刚好到头，再点「记为最大端点」。";
+  }
+  s+=" 目测角度有误差、端点附近也可能有死区，外推值只用来缩小搜索范围，一切以实测为准。";
+  tip.innerHTML=s;
+}
+["pwExLo","pwExHi","pwExDeg"].forEach(id=>$(id).addEventListener("input",renderPwEx));
+
+function renderPwResult(){
+  const box=$("pwResult");
+  if(pwMin===null||pwMax===null){ box.style.display="none"; return; }
+  const span=pwMax-pwMin, mid=Math.round((pwMin+pwMax)/2);
+  let html="<b>实测脉宽范围："+pwMin+" ~ "+pwMax+"µs</b>（跨度 "+span+"µs），中位 <b>"+mid+"µs</b>。<br>";
+  if(pwMax<=pwMin){
+    html+="<span class='warnline'>⚠ 两个端点一样或顺序反了，请重新记：最小端点应小于最大端点。</span><br>";
+  }else{
+    const perDeg=span/360;
+    const spanNew=Math.round(span/2/10)*10;
+    const nowPerDeg=FW_US_SPAN/180;
+    html+="若这段区间对应物理 0~360°：每 1° 物理角 ≈ <b>"+perDeg.toFixed(2)+"µs</b>；"+
+          "当前固件 1° 关节指令发出 "+FW_US_SPAN+"/180 = "+nowPerDeg.toFixed(2)+"µs，"+
+          "实际会转 <b>"+(nowPerDeg/perDeg).toFixed(2)+"°</b>。<br>";
+    if(spanNew===FW_US_SPAN){
+      html+="<span style='color:var(--accent)'>✓ 算出的 us_span = <b>"+spanNew+"</b>（实测跨度 ÷ 2）与当前固件一致："+
+            "1° 指令 = 1° 物理角，步态 IK / 软限位 / 600°/s 限速全部对齐，<b>不用再改 config.h</b>。</span><br>";
+    }else{
+      html+="<span class='warnline'>⚠ 按这两个端点算出的 us_span 应为 <b>"+spanNew+"</b>（实测跨度 ÷ 2），"+
+            "与当前固件 "+FW_US_SPAN+" 不同：把端点值报给助手改 config.h 重烧；"+
+            "us_mid 保持 1500、装腿仍按 1500µs。</span><br>";
+    }
+    html+="<span class='muted'>改 span 后 NVS 里的旧 trim 会让站姿轻微偏移，用 ⑤ 的「trim 换算」写回一遍即可。</span><br>";
+    if(mid===1500){
+      html+="实测中点正好 1500µs，与装腿基准一致。<br>";
+    }else{
+      html+="实测中点 "+mid+"µs ≠ 1500µs：这是 360° 舵机的<b>物理中点</b>，"+
+            "<b>不要拿它装腿</b>；装腿仍按 1500µs，否则固件一发站姿就会把腿转回去。<br>";
+    }
+    if(pwMax>=2950){
+      html+="<span class='warnline'>⚠ 端点已顶到 3000µs 附近：若舵机还在继续转，说明真实端点更高，"+
+            "需要再把 <code>SERVO_US_CMD_MAX</code> / <code>SERVO_US_RAW_MAX</code> 放宽并重烧。</span><br>";
+    }
+  }
+  html+="<span class='muted'>装完腿记得点「退出 raw 模式」，否则 ④ 的 trim 不生效。端点值建议抄进 docs/08 存档。</span>";
+  box.innerHTML=html;
+  box.style.display="block";
+}
+
+async function pwTypeCheck(){
+  if(!connected){ logSys("先连上开发板再做类型判别。"); return; }
+  if(pwScanRunning||pwTypeRunning){ logSys("正在忙，等它结束。"); return; }
+  pwTypeRunning=true;
+  const b=$("btnPwType"); b.disabled=true; b.textContent="🧭 判别中…盯住舵机";
+  logSys("类型判别开始：CH"+cur+" 发 1700µs 保持 3 秒，再回 1500µs。请盯住舵机 —— 转到一个角度停住 = 位置舵机；一直转不停 = 连续旋转舵机（不能装腿）。");
+  try{
+    pwSend(1700); await sleep(3000);
+    pwSend(1500);
+    logSys("判别结束，已回 1500µs。刚才若一直转不停 → 这是连续旋转舵机，没有位置保持能力，请换位置舵机再装机。");
+  }catch(e){ logErr("类型判别中断："+e.message); }
+  finally{
+    pwTypeRunning=false; b.disabled=!connected; b.textContent="🧭 判别舵机类型（1700µs / 3 秒）";
+  }
+}
+
+async function pwScan(){
+  if(!connected){ logSys("先连上开发板再扫描。"); return; }
+  if(pwScanRunning){ pwScanAbort=true; logSys("正在停止扫描…"); return; }
+  if(pwTypeRunning){ logSys("类型判别还没结束，等一下。"); return; }
+  pwScanRunning=true; pwScanAbort=false;
+  const b=$("btnPwScan"); b.textContent="⏹ 点此停止扫描";
+  logSys("自动扫描开始：500 → 3000 → 500µs，每步 200µs / 350ms，约 10 秒。盯住舵机在哪开始动、哪到头；结束自动回 1500µs。别让它在端点堵转太久。");
+  try{
+    const seq=[];
+    for(let u=PW_MIN;u<PW_MAX;u+=200) seq.push(u);
+    seq.push(PW_MAX);                              /* 显式包含 3000，别因步长取整漏掉 */
+    for(let u=PW_MAX;u>PW_MIN;u-=200) seq.push(u);
+    seq.push(PW_MIN);
+    for(const u of seq){
+      if(pwScanAbort) break;
+      pwSend(u);
+      await sleep(350);
+    }
+    pwSend(1500);
+    logSys("扫描结束，已回 1500µs 装腿基准。记下端点后点「记为最小 / 最大端点」保存。");
+  }catch(e){ logErr("扫描中断："+e.message); }
+  finally{
+    pwScanRunning=false; b.disabled=!connected; b.textContent="▶ 自动扫一遍（约 10 秒）";
+  }
+}
+
+$("pwSlider").addEventListener("input",e=>pwSend(parseInt(e.target.value,10)));
+$("btnPwM100").onclick=()=>pwSend(pwCur-100);
+$("btnPwM10").onclick =()=>pwSend(pwCur-10);
+$("btnPwP10").onclick =()=>pwSend(pwCur+10);
+$("btnPwP100").onclick=()=>pwSend(pwCur+100);
+$("btnPw500").onclick =()=>pwSend(500);
+$("btnPw1000").onclick=()=>pwSend(1000);
+$("btnPw1500").onclick=()=>pwSend(1500);
+$("btnPw2000").onclick=()=>pwSend(2000);
+$("btnPw2500").onclick=()=>pwSend(2500);
+$("btnPw2700").onclick=()=>pwSend(2700);
+$("btnPw2900").onclick=()=>pwSend(2900);
+$("btnPw3000").onclick=()=>pwSend(3000);
+$("btnPwType").onclick=pwTypeCheck;
+$("btnPwScan").onclick=pwScan;
+$("btnPwMin").onclick=()=>{ pwMin=pwCur; renderPw(); logSys("CH"+cur+" 最小端点记为 "+pwMin+"µs。"); };
+$("btnPwMax").onclick=()=>{ pwMax=pwCur; renderPw(); logSys("CH"+cur+" 最大端点记为 "+pwMax+"µs。"); };
+$("btnPwReset").onclick=()=>{ pwMin=null; pwMax=null; renderPw(); logSys("端点记录已清除。"); };
+$("btnPwMid").onclick=()=>{
+  pwSend(1500);
+  logSys("已停在装腿基准 1500µs（360° 舵机的物理角度未必是 180°，没关系）。保持通电，把机械腿装到站立姿势（膝 −38° / 髋 19°）；装完点「退出 raw 模式」。");
+};
+$("btnPwMidMeasured").onclick=()=>{
+  if(pwMin===null||pwMax===null){ logSys("还没记全两个端点，先点「记为最小 / 最大端点」。"); return; }
+  const mid=Math.round((pwMin+pwMax)/2/10)*10;
+  pwSend(mid);
+  logSys("已停在实测中点 "+mid+"µs，仅用于观察物理中位。装腿请回 1500µs，否则固件上电发 1500µs 会把腿转回去。");
+};
+$("btnPwOff").onclick=()=>{
+  send("pwm off");
+  logSys("已退出 raw 模式，步态恢复，④ 的 trim 滑块现在会生效。若刚才停在 2500µs 以上，舵机会被 12°/拍 限速平滑拉回 1500µs 站姿（约 0.2 秒），这是正常回位，不是故障。");
+};
+
+/* ===== 初始化 ===== */
+(function init(){
+  renderChans(); renderTable(); renderSlider(); renderPw(); renderSpanConv();
+  setUI(false);          /* 统一初始化按钮状态 + ⑤ 区状态条文案 */
+  $("btnWifi").disabled=false;
+  $("apiInput").value=apiBase;   /* http 但非板子时，探测失败后会再填成候选地址 */
+  if(!("serial" in navigator)){
+    $("envTip").textContent="ℹ 本环境无 Web Serial，USB 串口不可用（WiFi 照常）";
+    $("envTip").style.color="var(--muted)";
+    logSys("当前环境不支持串口（预览面板 / 旧浏览器）。WiFi 连接不受影响；要用 USB 请用 Edge / Chrome 双击打开本文件。");
+  }else{
+    $("envTip").textContent="✓ USB 串口可用（兜底）";
+    $("envTip").style.color="var(--accent)";
+  }
+  logSys("准备就绪：正在自动寻找机器狗（先试记住的地址，找不到会自动扫常见网段）。找不到就插 USB 线点「改用 USB 串口」，或在 ① 的设置里手填板子地址。");
+  probeApiBase();
+})();
+
+/* ===== WiFi 心跳 =====
+ * 只认真正回 pong：以前只看「有响应」，被强制门户 / 交换机登录页 / 404 顶包时
+ * 也会误显示已连接。连续 3 次失败才把按钮灰掉，避免一次丢包就打断标定。 */
+setInterval(()=>{
+  if(linkMode!=='wifi' || !wifiAuto) return;
+  httpRequest('/api/ping', 2500).then(r=>{
+    if(r.status===200 && r.text.trim()==='pong'){
+      wifiFail=0;
+      if(!connected){
+        connected=true; setUI(true);
+        logSys("WiFi 已恢复，重新读回板子状态…");
+        send("status");
+      }
+      return;
+    }
+    wifiFail++;
+    if(wifiFail>=3 && connected){ connected=false; setUI(false); }
+    if(wifiFail>=2){
+      setBadge(false, /login|pass(word)?|用户名|密码|lanswitch/i.test(r.text)
+        ? '打开的是别人的登录页，不是机器狗'
+        : '不是机器狗 · '+baseLabel()+' 返回 '+r.status);
+    }
+  }).catch(()=>{
+    wifiFail++;
+    if(wifiFail>=3 && connected){
+      connected=false; setUI(false);
+      logErr("WiFi 心跳断了：连不上 "+baseLabel()+"。查供电 / 同一 WiFi / 退出 VPN，或点「🌐 WiFi 连接」重新寻找。");
+    }
+    if(wifiFail>=2) setBadge(false, '连不上 '+baseLabel());
+  });
+}, 800);
+
+/* 板子 DHCP 地址可能变，定期把 /api/net 报的当前地址记进 localStorage，
+ * 下次双击本地文件打开时就能直接命中（和 console.html 共用同一份记录）。 */
+setInterval(()=>{
+  if(linkMode==='wifi' && connected) refreshNet();
+}, 4000);
+</script>
+</body>
+</html>

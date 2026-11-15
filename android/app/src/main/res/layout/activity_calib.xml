@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 对应 tools/servo_calib.html 的 ①~⑥ 区，命令与固件 console.c 一致 -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/sp8_bg"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="14dp">
+
+        <!-- ===== 顶栏 ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/btnBack"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:background="@drawable/bg_btn_ghost"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
+                android:text="← 遥控"
+                android:textColor="@color/sp8_accent"
+                android:textSize="13sp" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="🔧 舵机 trim 标定台"
+                android:textColor="@color/sp8_accent"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvCalState"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_badge_off"
+                android:paddingLeft="10dp"
+                android:paddingTop="6dp"
+                android:paddingRight="10dp"
+                android:paddingBottom="6dp"
+                android:text="● 未连接"
+                android:textColor="@color/sp8_danger"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/bg_notice"
+            android:padding="10dp"
+            android:text="⚡ 动手前确认：PCA9685 的 V+ 已接 5V、三方共地、OE 接 GND。V+ 没电或 OE 悬空时命令回显全正常，但 8 个舵机一个都不会动。\n当前站姿是膝 −48° / 髋 24°（比装配基准 −38°/19° 多折 10°），trim 值本身不用重标。"
+            android:textColor="@color/sp8_warn"
+            android:textSize="12sp" />
+
+        <!-- ===== ① 选择通道 ===== -->
+        <LinearLayout style="@style/Sp8.Card">
+            <TextView
+                style="@style/Sp8.CardTitle"
+                android:text="① 选择通道" />
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="4">
+
+                <TextView android:id="@+id/chan0" style="@style/Sp8.Chan" android:enabled="false" android:text="CH0" />
+                <TextView android:id="@+id/chan1" style="@style/Sp8.Chan" android:enabled="false" android:text="CH1" />
+                <TextView android:id="@+id/chan2" style="@style/Sp8.Chan" android:enabled="false" android:text="CH2" />
+                <TextView android:id="@+id/chan3" style="@style/Sp8.Chan" android:enabled="false" android:text="CH3" />
+                <TextView android:id="@+id/chan4" style="@style/Sp8.Chan" android:enabled="false" android:text="CH4" />
+                <TextView android:id="@+id/chan5" style="@style/Sp8.Chan" android:enabled="false" android:text="CH5" />
+                <TextView android:id="@+id/chan6" style="@style/Sp8.Chan" android:enabled="false" android:text="CH6" />
+                <TextView android:id="@+id/chan7" style="@style/Sp8.Chan" android:enabled="false" android:text="CH7" />
+            </GridLayout>
+
+            <TextView
+                style="@style/Sp8.Muted"
+                android:layout_marginTop="6dp"
+                android:text="CH0~7 = 左前髋/膝、右前髋/膝、左后髋/膝、右后髋/膝。点一下选中，再拖下面的滑块。" />
+        </LinearLayout>
+
+        <!-- ===== ② 微调 trim ===== -->
+        <LinearLayout style="@style/Sp8.Card">
+            <TextView
+                style="@style/Sp8.CardTitle"
+                android:text="② 拖滑块，把腿摆到站立位置" />
+
+            <TextView
+                android:id="@+id/tvBigVal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="+0.0°"
+                android:textColor="@color/sp8_accent"
+                android:textSize="38sp"
+                android:textStyle="bold"
+                android:typeface="monospace" />
+
+            <SeekBar
+                android:id="@+id/seekTrim"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:enabled="false"
+                android:max="200"
+                android:progress="100"
+                android:progressTint="@color/sp8_accent"
+                android:thumbTint="@color/sp8_accent" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="−50°"
+                    android:textColor="@color/sp8_muted"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="0°"
+                    android:textColor="@color/sp8_muted"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="end"
+                    android:text="+50°"
+                    android:textColor="@color/sp8_muted"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:columnCount="5">
+
+                <TextView android:id="@+id/btnM1" style="@style/Sp8.Btn.Ghost" android:enabled="false" android:text="−1°" />
+                <TextView android:id="@+id/btnM05" style="@style/Sp8.Btn.Ghost" android:enabled="false" android:text="−0.5°" />
+                <TextView android:id="@+id/btnZero" style="@style/Sp8.Btn.Warn" android:enabled="false" android:text="归零 0°" />
+                <TextView android:id="@+id/btnP05" style="@style/Sp8.Btn.Ghost" android:enabled="false" android:text="+0.5°" />
+                <TextView android:id="@+id/btnP1" style="@style/Sp8.Btn.Ghost" android:enabled="false" android:text="+1°" />
+            </GridLayout>
+
+            <TextView
+                android:id="@+id/tvReadout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_tip"
+                android:padding="10dp"
+                android:text="未连接 · 点「读取 8 路」把板子里的 trim/dir 取回来"
+                android:textColor="@color/sp8_text"
+                android:textSize="12sp"
+                android:typeface="monospace" />
+
+            <TextView
+                android:id="@+id/btnDir"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_btn_ghost"
+                android:clickable="true"
+                android:enabled="false"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="🔁 方向 dir：+1（点一下安全翻转）"
+                android:textColor="@color/sp8_accent"
+                android:textSize="13sp" />
+
+            <TextView
+                style="@style/Sp8.Muted"
+                android:layout_marginTop="6dp"
+                android:text="翻转前会自动退出 pwm / cal、回站姿并等姿态收敛，翻转瞬间舵机不该动。「回到站姿」点了不动是正常的：本来就在站姿，角度没变。" />
+        </LinearLayout>
+
+        <!-- ===== ③ 总表 + 保存 ===== -->
+        <LinearLayout style="@style/Sp8.Card">
+            <TextView
+                style="@style/Sp8.CardTitle"
+                android:text="③ 8 路标定值总表" />
+
+            <TextView
+                android:id="@+id/tvTable"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_terminal"
+                android:padding="10dp"
+                android:text="CH   关节        trim      dir\n（未读取）"
+                android:textColor="@color/sp8_term_text"
+                android:textSize="12sp"
+                android:typeface="monospace" />
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:columnCount="2">
+
+                <TextView android:id="@+id/btnReadAll" style="@style/Sp8.Btn.Primary" android:enabled="false" android:text="📋 读取 8 路" />
+                <TextView android:id="@+id/btnSave" style="@style/Sp8.Btn.Primary" android:enabled="false" android:text="💾 保存到板子" />
+                <TextView android:id="@+id/btnStand" style="@style/Sp8.Btn.Ghost" android:enabled="false" android:text="↺ 回到站姿" />
+                <TextView android:id="@+id/btnWiggle" style="@style/Sp8.Btn.Ghost" android:enabled="false" android:text="🔍 通电自检" />
+                <TextView android:id="@+id/btnPwmOff" style="@style/Sp8.Btn.Ghost" android:enabled="false" android:text="退出 raw 模式" />
+                <TextView android:id="@+id/btnZeroAll" style="@style/Sp8.Btn.Warn" android:enabled="false" android:text="只归零 trim" />
+                <TextView android:id="@+id/btnClearAll" style="@style/Sp8.Btn.Warn" android:enabled="false" android:layout_columnSpan="2" android:text="trim + dir 全清（重头校准才用）" />
+            </GridLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_notice"
+                android:padding="10dp"
+                android:text="保存后写入 NVS，断电不丢；不保存的话重启又回到旧值，白调。\n「trim + dir 全清」会把已翻成 −1 的方向也翻回 +1，非站姿下舵机会一起跳，只有想重头校准时才用。"
+                android:textColor="@color/sp8_warn"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- ===== ④ 终端 ===== -->
+        <LinearLayout style="@style/Sp8.Card">
+            <TextView
+                style="@style/Sp8.CardTitle"
+                android:text="④ 命令 / 回显" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/etCalCmd"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_terminal"
+                    android:hint="手动敲命令，如 cal 0 40"
+                    android:imeOptions="actionSend"
+                    android:inputType="text"
+                    android:paddingLeft="12dp"
+                    android:paddingRight="12dp"
+                    android:textColor="@color/sp8_text"
+                    android:textColorHint="@color/sp8_muted"
+                    android:textSize="13sp"
+                    android:typeface="monospace" />
+
+                <TextView
+                    android:id="@+id/btnCalSend"
+                    android:layout_width="68dp"
+                    android:layout_height="44dp"
+                    android:layout_marginLeft="8dp"
+                    android:background="@drawable/bg_btn_primary"
+                    android:clickable="true"
+                    android:enabled="false"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="发送"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:columnCount="4">
+
+                <TextView android:id="@+id/btnCStatus" style="@style/Sp8.Btn.Ghost" android:enabled="false" android:text="status" />
+                <TextView android:id="@+id/btnCPca" style="@style/Sp8.Btn.Ghost" android:enabled="false" android:text="pcadiag" />
+                <TextView android:id="@+id/btnCPwmOff" style="@style/Sp8.Btn.Ghost" android:enabled="false" android:text="pwm off" />
+                <TextView android:id="@+id/btnCCalOff" style="@style/Sp8.Btn.Ghost" android:enabled="false" android:text="cal off" />
+            </GridLayout>
+
+            <ScrollView
+                android:id="@+id/scrollCalLog"
+                android:layout_width="match_parent"
+                android:layout_height="170dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_terminal"
+                android:padding="8dp">
+
+                <TextView
+                    android:id="@+id/tvCalLog"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/sp8_term_text"
+                    android:textIsSelectable="true"
+                    android:textSize="12sp"
+                    android:typeface="monospace" />
+            </ScrollView>
+
+            <TextView
+                android:id="@+id/btnCalClear"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_btn_ghost"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:text="清空终端"
+                android:textColor="@color/sp8_text"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

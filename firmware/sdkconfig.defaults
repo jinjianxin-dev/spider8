@@ -26,8 +26,23 @@ CONFIG_SPIRAM_SPEED_80M=y
 # --- FreeRTOS：1kHz tick（步态引擎 20ms 插值周期需要精细延时）---
 CONFIG_FREERTOS_HZ=1000
 
+# --- 控制台：走 ESP32-S3 原生 USB Serial/JTAG ---
+# 为什么不用 UART0：本板"UART"口的 CH340 在这台机器上驱动不可用，只能插"USB"口，
+# 而 UART0 的 TX/RX 只出现在"UART"口上。所以日志 + 命令行都必须走 USB Serial/JTAG。
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+# CONFIG_ESP_CONSOLE_UART_DEFAULT is not set
+CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
+
 # --- 日志级别：INFO（调试时可改 DEBUG）---
 CONFIG_LOG_DEFAULT_LEVEL_INFO=y
 
 # --- 编译优化：-Og，调试期保留断点体验（量产改 PERF）---
 CONFIG_COMPILER_OPTIMIZATION_DEBUG=y
+
+# --- 无线测试台：机器狗自己开热点，网页控制台内嵌在固件里 ---
+# 关掉这一项即可把 Wi-Fi 协议栈整体摘掉（省 RAM / 省电），有线串口不受影响
+CONFIG_SPIDER8_WIFI_ENABLED=y
+
+# --- 系统事件任务栈：Wi-Fi 事件回调里要做中文日志 + 连接 + 模式切换，
+# 默认 2304 实测溢出（sys_evt stack overflow），提到 4608 ---
+CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=4608

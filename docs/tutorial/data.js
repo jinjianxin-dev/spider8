@@ -1365,7 +1365,7 @@ static StackType_t  s_heartbeat_stack[HEARTBEAT_STACK_SIZE];</code></pre></div>
 </div>
 
 <h2>下一步：M0-2</h2>
-<p>8 路 LEDC PWM（50 Hz，脉宽 500~2500 µs，14 bit 分辨率）+ 角度到脉宽的线性映射 + 每关节 <code>min/max/center/trim</code> 校准 + 斜率限流保护（MG90S 无反馈，靠限制突变速率防瞬间大电流）+ 校准参数落 NVS。</p>
+<p>8 路 LEDC PWM（50 Hz，脉宽由 <code>us_mid / us_span</code> 线性映射，裸测试通道放宽到 500~3000 µs，14 bit 分辨率）+ 角度到脉宽的线性映射 + 每关节 <code>min/max/center/trim</code> 校准 + 斜率限流保护（MG90S 无反馈，靠限制突变速率防瞬间大电流）+ 校准参数落 NVS。</p>
 <p>会新增 <code>main/servo.c</code> / <code>servo.h</code> / <code>config.h</code>，并把上面那条「返回码 + 降级」的边界真正落地。</p>
 
 <div class="callout ok">

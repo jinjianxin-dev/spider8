@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Spider8 接线图（可缩放查看）</title>
+<style>
+  body { margin:0; background:#f5f5f2; font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; color:#2c2c2a; }
+  .bar { position:sticky; top:0; z-index:10; background:#ffffff; border-bottom:1px solid #d3d1c7; padding:12px 18px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .bar strong { font-size:15px; font-weight:500; margin-right:12px; }
+  button { font:inherit; font-size:13px; padding:7px 13px; border:1px solid #b4b2a9; border-radius:8px; background:#ffffff; color:#2c2c2a; cursor:pointer; }
+  button:hover { background:#f1efe8; }
+  button.on { background:#185fa5; border-color:#185fa5; color:#ffffff; }
+  .spacer { flex:1; }
+  .hint { font-size:12px; color:#5f5e5a; }
+  .stage { padding:24px; overflow:auto; }
+  #canvas { width:1400px; }
+  #canvas svg { display:block; box-shadow:0 1px 4px rgba(0,0,0,.12); }
+  .tabs { display:flex; gap:8px; }
+  .hidden { display:none; }
+  @media print { .bar { display:none; } .stage { padding:0; overflow:visible; } #canvas { zoom:1 !important; } }
+</style>
+</head>
+<body>
+<div class="bar">
+  <strong>Spider8 接线图</strong>
+  <div class="tabs">
+    <button id="tab-pca" class="on" onclick="showTab('pca')">PCA9685 版（当前在用）</button>
+    <button id="tab-ledc" onclick="showTab('ledc')">LEDC 直连版（原版）</button>
+  </div>
+  <span class="spacer"></span>
+  <button class="zbtn" onclick="fit()">适应窗口</button>
+  <button class="zbtn" onclick="zoom(0.5)">50%</button>
+  <button class="zbtn" onclick="zoom(0.75)">75%</button>
+  <button class="zbtn" onclick="zoom(1)">100%</button>
+  <button class="zbtn" onclick="zoom(1.5)">150%</button>
+  <button class="zbtn" onclick="zoom(2)">200%</button>
+  <button onclick="window.print()">打印</button>
+  <span class="hint" id="pct"></span>
+</div>
+
+<div class="stage" id="stage">
+  <div id="canvas">
+    <div id="view-pca">
+      <svg viewBox="0 0 1400 1700" width="1400" height="1700" role="img" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif">
+        <title>Spider8 PCA9685 转接接线图（大图版）</title>
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+        </defs>
+        <rect x="0" y="0" width="1400" height="1700" fill="#FFFFFF"/>
+        <text x="60" y="56" font-size="28" font-weight="500" fill="#2C2C2A">PCA9685 舵机接线图 · 8 路 MG90S</text>
+        <line x1="60" y1="112" x2="110" y2="112" stroke="#0F6E56" stroke-width="4"/>
+        <text x="122" y="112" dominant-baseline="central" font-size="20" fill="#2C2C2A">3.3V 逻辑电源</text>
+        <line x1="310" y1="112" x2="360" y2="112" stroke="#185FA5" stroke-width="4"/>
+        <text x="372" y="112" dominant-baseline="central" font-size="20" fill="#2C2C2A">I2C / 舵机信号</text>
+        <line x1="600" y1="112" x2="650" y2="112" stroke="#E24B4A" stroke-width="4"/>
+        <text x="662" y="112" dominant-baseline="central" font-size="20" fill="#2C2C2A">5V 舵机电源</text>
+        <line x1="860" y1="112" x2="910" y2="112" stroke="#2C2C2A" stroke-width="4"/>
+        <text x="922" y="112" dominant-baseline="central" font-size="20" fill="#2C2C2A">GND 共地</text>
+        <line x1="60" y1="150" x2="1340" y2="150" stroke="#D3D1C7" stroke-width="1"/>
+        <rect x="60" y="180" width="280" height="560" rx="16" fill="#EAF3DE" stroke="#3B6D11" stroke-width="1"/>
+        <text x="200" y="232" text-anchor="middle" font-size="26" font-weight="500" fill="#173404">ESP32-S3</text>
+        <text x="200" y="272" text-anchor="middle" font-size="20" fill="#3B6D11">USB 接电脑供电</text>
+        <text x="326" y="350" text-anchor="end" dominant-baseline="central" font-size="22" fill="#185FA5">3V3</text>
+        <text x="326" y="440" text-anchor="end" dominant-baseline="central" font-size="22" fill="#185FA5">GPIO8</text>
+        <text x="326" y="530" text-anchor="end" dominant-baseline="central" font-size="22" fill="#185FA5">GPIO9</text>
+        <text x="200" y="700" text-anchor="middle" font-size="22" fill="#3B6D11">GND</text>
+        <rect x="480" y="180" width="320" height="900" rx="16" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/>
+        <text x="640" y="232" text-anchor="middle" font-size="26" font-weight="500" fill="#04342C">PCA9685</text>
+        <text x="640" y="272" text-anchor="middle" font-size="20" fill="#0F6E56">16 路 PWM · 地址 0x40 · 50Hz</text>
+        <text x="496" y="350" text-anchor="start" dominant-baseline="central" font-size="22" fill="#185FA5">VCC</text>
+        <text x="496" y="440" text-anchor="start" dominant-baseline="central" font-size="22" fill="#185FA5">SDA</text>
+        <text x="496" y="530" text-anchor="start" dominant-baseline="central" font-size="22" fill="#185FA5">SCL</text>
+        <text x="640" y="620" text-anchor="middle" font-size="20" fill="#0F6E56">通道 0~7 = CH0~CH7</text>
+        <text x="640" y="658" text-anchor="middle" font-size="18" fill="#5F5E5A">12bit：1 计数 ≈ 4.88µs ≈ 0.44°</text>
+        <text x="640" y="978" text-anchor="middle" font-size="19" font-weight="600" fill="#A0522D">OE → 接 GND（必须）</text>
+        <text x="640" y="1006" text-anchor="middle" font-size="15" fill="#A0522D">低电平使能；悬空被拉高 = 16 路全关</text>
+        <text x="640" y="1045" text-anchor="middle" font-size="22" fill="#0F6E56">GND</text>
+        <line x1="340" y1="350" x2="480" y2="350" stroke="#0F6E56" stroke-width="3"/>
+        <text x="410" y="330" text-anchor="middle" font-size="18" fill="#0F6E56">3.3V</text>
+        <line x1="340" y1="440" x2="478" y2="440" stroke="#185FA5" stroke-width="3" marker-end="url(#arrow)"/>
+        <text x="410" y="420" text-anchor="middle" font-size="18" fill="#185FA5">SDA</text>
+        <line x1="340" y1="530" x2="478" y2="530" stroke="#185FA5" stroke-width="3" marker-end="url(#arrow)"/>
+        <text x="410" y="510" text-anchor="middle" font-size="18" fill="#185FA5">SCL</text>
+        <line x1="800" y1="224" x2="918" y2="224" stroke="#185FA5" stroke-width="2.5" marker-end="url(#arrow)"/>
+        <line x1="800" y1="342" x2="918" y2="342" stroke="#185FA5" stroke-width="2.5" marker-end="url(#arrow)"/>
+        <line x1="800" y1="460" x2="918" y2="460" stroke="#185FA5" stroke-width="2.5" marker-end="url(#arrow)"/>
+        <line x1="800" y1="578" x2="918" y2="578" stroke="#185FA5" stroke-width="2.5" marker-end="url(#arrow)"/>
+        <line x1="800" y1="696" x2="918" y2="696" stroke="#185FA5" stroke-width="2.5" marker-end="url(#arrow)"/>
+        <line x1="800" y1="814" x2="918" y2="814" stroke="#185FA5" stroke-width="2.5" marker-end="url(#arrow)"/>
+        <line x1="800" y1="932" x2="918" y2="932" stroke="#185FA5" stroke-width="2.5" marker-end="url(#arrow)"/>
+        <line x1="800" y1="1050" x2="918" y2="1050" stroke="#185FA5" stroke-width="2.5" marker-end="url(#arrow)"/>
+        <text x="860" y="210" text-anchor="middle" font-size="18" fill="#185FA5">ch0</text>
+        <text x="860" y="328" text-anchor="middle" font-size="18" fill="#185FA5">ch1</text>
+        <text x="860" y="446" text-anchor="middle" font-size="18" fill="#185FA5">ch2</text>
+        <text x="860" y="564" text-anchor="middle" font-size="18" fill="#185FA5">ch3</text>
+        <text x="860" y="682" text-anchor="middle" font-size="18" fill="#185FA5">ch4</text>
+        <text x="860" y="800" text-anchor="middle" font-size="18" fill="#185FA5">ch5</text>
+        <text x="860" y="918" text-anchor="middle" font-size="18" fill="#185FA5">ch6</text>
+        <text x="860" y="1036" text-anchor="middle" font-size="18" fill="#185FA5">ch7</text>
+        <rect x="920" y="180" width="420" height="88" rx="10" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/>
+        <text x="1130" y="224" text-anchor="middle" dominant-baseline="central" font-size="24" fill="#412402">0 · 左前 髋</text>
+        <rect x="920" y="298" width="420" height="88" rx="10" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/>
+        <text x="1130" y="342" text-anchor="middle" dominant-baseline="central" font-size="24" fill="#412402">1 · 左前 膝</text>
+        <rect x="920" y="416" width="420" height="88" rx="10" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/>
+        <text x="1130" y="460" text-anchor="middle" dominant-baseline="central" font-size="24" fill="#412402">2 · 右前 髋</text>
+        <rect x="920" y="534" width="420" height="88" rx="10" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/>
+        <text x="1130" y="578" text-anchor="middle" dominant-baseline="central" font-size="24" fill="#412402">3 · 右前 膝</text>
+        <rect x="920" y="652" width="420" height="88" rx="10" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/>
+        <text x="1130" y="696" text-anchor="middle" dominant-baseline="central" font-size="24" fill="#412402">4 · 左后 髋</text>
+        <rect x="920" y="770" width="420" height="88" rx="10" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/>
+        <text x="1130" y="814" text-anchor="middle" dominant-baseline="central" font-size="24" fill="#412402">5 · 左后 膝</text>
+        <rect x="920" y="888" width="420" height="88" rx="10" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/>
+        <text x="1130" y="932" text-anchor="middle" dominant-baseline="central" font-size="24" fill="#412402">6 · 右后 髋</text>
+        <rect x="920" y="1006" width="420" height="88" rx="10" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/>
+        <text x="1130" y="1050" text-anchor="middle" dominant-baseline="central" font-size="24" fill="#412402">7 · 右后 膝</text>
+        <polyline points="200,740 200,1160 1100,1160 1100,1240" fill="none" stroke="#2C2C2A" stroke-width="3" marker-end="url(#arrow)"/>
+        <line x1="640" y1="1080" x2="640" y2="1160" stroke="#2C2C2A" stroke-width="3"/>
+        <circle cx="640" cy="1160" r="7" fill="#2C2C2A"/>
+        <text x="880" y="1132" text-anchor="middle" font-size="20" fill="#2C2C2A">共地线（必须接）</text>
+        <text x="60" y="1205" font-size="24" font-weight="500" fill="#2C2C2A">电源与接线清单</text>
+        <rect x="60" y="1240" width="340" height="180" rx="12" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/>
+        <text x="230" y="1295" text-anchor="middle" font-size="24" font-weight="500" fill="#2C2C2A">5V / 3A 适配器</text>
+        <text x="230" y="1340" text-anchor="middle" font-size="19" fill="#5F5E5A">DC 母座转端子排</text>
+        <text x="230" y="1382" text-anchor="middle" font-size="18" fill="#2C2C2A">正极→V+　负极→GND</text>
+        <rect x="460" y="1240" width="440" height="180" rx="12" fill="#FCEBEB" stroke="#A32D2D" stroke-width="1"/>
+        <text x="680" y="1295" text-anchor="middle" font-size="24" font-weight="500" fill="#501313">V+ 端子排（5V）</text>
+        <text x="680" y="1340" text-anchor="middle" font-size="19" fill="#A32D2D">8 只舵机的红线全接这里</text>
+        <text x="680" y="1382" text-anchor="middle" font-size="18" fill="#501313">适配器正极、电容长脚 也接这里</text>
+        <rect x="960" y="1240" width="380" height="180" rx="12" fill="#F1EFE8" stroke="#444441" stroke-width="1"/>
+        <text x="1150" y="1295" text-anchor="middle" font-size="24" font-weight="500" fill="#2C2C2A">GND 端子排</text>
+        <text x="1150" y="1340" text-anchor="middle" font-size="19" fill="#2C2C2A">8 只舵机棕线 + 适配器负极</text>
+        <text x="1150" y="1382" text-anchor="middle" font-size="18" fill="#444441">ESP32 GND、PCA GND、电容短脚</text>
+        <line x1="400" y1="1330" x2="458" y2="1330" stroke="#E24B4A" stroke-width="3" marker-end="url(#arrow)"/>
+        <rect x="60" y="1480" width="340" height="180" rx="12" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/>
+        <text x="230" y="1535" text-anchor="middle" font-size="24" font-weight="500" fill="#2C2C2A">1000µF / 10V</text>
+        <text x="230" y="1580" text-anchor="middle" font-size="19" fill="#5F5E5A">电解电容，并联在 V+ 与 GND 之间</text>
+        <text x="230" y="1622" text-anchor="middle" font-size="18" fill="#A32D2D">长脚→V+，短脚→GND（接反会爆）</text>
+        <rect x="460" y="1480" width="880" height="180" rx="12" fill="#FAEEDA" stroke="#854F0B" stroke-width="1"/>
+        <text x="900" y="1530" text-anchor="middle" font-size="26" font-weight="500" fill="#412402">每只 MG90S 的三根线</text>
+        <text x="900" y="1572" text-anchor="middle" font-size="20" fill="#412402">橙线 → PCA9685 对应通道 0~7（见上图）</text>
+        <text x="900" y="1610" text-anchor="middle" font-size="20" fill="#412402">红线 → V+ 端子排　｜　棕线 → GND 端子排</text>
+        <text x="900" y="1648" text-anchor="middle" font-size="18" fill="#A32D2D">注意：PCA9685 的 VCC 接 ESP32 3V3（不是 5V）；V+ 才接适配器 5V</text>
+      </svg>
+    </div>
+    <div id="view-ledc" class="hidden">
+      <img src="10-%E7%94%B5%E6%BA%90%E4%B8%8E%E6%8E%A5%E7%BA%BF%E5%9B%BE.svg" width="1360" height="1340" alt="LEDC 直连接线图">
+      <p style="font-size:14px;color:#5f5e5a">若上图未显示，请直接打开同目录下的 <b>10-电源与接线图.svg</b>。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  var stage = document.getElementById('stage');
+  var canvas = document.getElementById('canvas');
+  var level = 1;
+
+  function apply(scale) {
+    level = scale;
+    canvas.style.zoom = scale;
+    document.getElementById('pct').textContent = '缩放 ' + Math.round(scale * 100) + '%';
+    document.querySelectorAll('.zbtn').forEach(function (b) { b.classList.remove('on'); });
+  }
+
+  function zoom(scale) { apply(scale); stage.scrollLeft = 0; stage.scrollTop = 0; }
+
+  function fit() {
+    var avail = stage.clientWidth - 48;
+    apply(Math.min(1, avail / 1400));
+  }
+
+  function showTab(name) {
+    document.getElementById('view-pca').classList.toggle('hidden', name !== 'pca');
+    document.getElementById('view-ledc').classList.toggle('hidden', name !== 'ledc');
+    document.getElementById('tab-pca').classList.toggle('on', name === 'pca');
+    document.getElementById('tab-ledc').classList.toggle('on', name === 'ledc');
+    fit();
+  }
+
+  window.addEventListener('resize', function () { if (level < 1) fit(); });
+  fit();
+</script>
+</body>
+</html>

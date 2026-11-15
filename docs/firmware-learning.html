@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spider8 固件小白学习指南</title>
+<style>
+  :root{
+    --bg:#f5f7f6; --panel:#ffffff; --ink:#1f2a28; --muted:#5d6b67;
+    --line:#e2e8e6; --accent:#0F6E56; --accent-soft:#e3f1ec;
+    --warn:#b8541f; --warn-soft:#fbeede; --chip:#0F6E56;
+    --shadow:0 2px 10px rgba(15,40,30,.08);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.7;font-size:16px}
+  /* 侧边导航 */
+  .nav{position:fixed;top:0;left:0;width:210px;height:100vh;background:var(--panel);
+       border-right:1px solid var(--line);padding:18px 14px;overflow-y:auto}
+  .nav h1{font-size:16px;margin:0 0 4px;color:var(--accent)}
+  .nav .sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+  .nav a{display:block;color:var(--ink);text-decoration:none;padding:8px 10px;border-radius:8px;
+         font-size:14px;margin-bottom:2px}
+  .nav a:hover{background:var(--accent-soft)}
+  .nav a.active{background:var(--accent);color:#fff}
+  .nav .tip{margin-top:18px;font-size:11px;color:var(--muted);line-height:1.5;
+            border-top:1px dashed var(--line);padding-top:12px}
+  /* 主体 */
+  .main{margin-left:210px;padding:32px 40px 80px;max-width:980px}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+          padding:26px 30px;margin-bottom:26px;box-shadow:var(--shadow)}
+  h2{margin:0 0 6px;font-size:22px;color:var(--accent)}
+  h3{margin:22px 0 8px;font-size:17px}
+  p{margin:8px 0}
+  .lead{color:var(--muted);margin-top:0}
+  code{background:#eef3f1;padding:1px 6px;border-radius:5px;font-family:ui-monospace,Consolas,monospace;
+       font-size:13px;color:#0a4d3c}
+  .pill{display:inline-block;background:var(--accent-soft);color:var(--accent);border-radius:20px;
+        padding:2px 12px;font-size:12px;margin:2px 4px 2px 0;font-weight:600}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:14px}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+  th{background:var(--accent-soft);color:var(--accent)}
+  tr:nth-child(even) td{background:#fafcfb}
+  /* 模块卡片 */
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-top:8px}
+  .card{background:var(--panel);border:2px solid var(--line);border-radius:12px;padding:14px;
+        cursor:pointer;transition:.15s;text-align:center}
+  .card:hover{border-color:var(--accent);transform:translateY(-2px)}
+  .card .ico{font-size:30px}
+  .card .nm{font-weight:700;margin-top:6px;font-size:15px}
+  .card .rl{font-size:12px;color:var(--muted);margin-top:2px}
+  .detail{display:none;border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-top:14px;
+          background:#fbfdfc}
+  .detail.show{display:block}
+  .detail h4{margin:0 0 6px;color:var(--accent);font-size:16px}
+  .detail .fn{font-family:ui-monospace,Consolas,monospace;font-size:13px;background:#eef3f1;
+              padding:2px 8px;border-radius:5px;display:inline-block;margin:3px 4px 3px 0}
+  .flow{background:#fbfdfc;border:1px solid var(--line);border-radius:12px;padding:18px}
+  .step{display:flex;align-items:flex-start;gap:12px;padding:10px 12px;border-radius:10px;
+        border:2px solid transparent;transition:.2s;margin-bottom:6px}
+  .step .num{flex:0 0 30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;
+            display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+  .step.on{border-color:var(--accent);background:var(--accent-soft)}
+  .step .txt{flex:1}
+  .step .txt b{color:var(--accent)}
+  .controls{margin:12px 0;display:flex;gap:8px;flex-wrap:wrap}
+  button{font-family:inherit;font-size:14px;border:1px solid var(--accent);background:var(--accent);
+         color:#fff;padding:8px 16px;border-radius:9px;cursor:pointer;transition:.15s}
+  button:hover{opacity:.88}
+  button.ghost{background:#fff;color:var(--accent)}
+  /* 调用图 */
+  #graph{width:100%;aspect-ratio:800/580;min-height:420px;height:auto;background:#fbfdfc;border:1px solid var(--line);border-radius:12px;display:block}
+  .gnode{cursor:pointer}
+  .gnode circle{transition:.15s}
+  .gnode:hover circle{r:26}
+  .ginfo{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:#fbfdfc;min-height:60px}
+  .edge{stroke:#c4d4ce;stroke-width:2}
+  .edge.hot{stroke:var(--accent);stroke-width:3.5}
+  .dim{opacity:.25}
+  /* 命令实验室 */
+  .cmd-row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .cmd{border:1px solid var(--accent);background:#fff;color:var(--accent);border-radius:8px;
+       padding:7px 12px;cursor:pointer;font-family:ui-monospace,Consolas,monospace;font-size:14px}
+  .cmd:hover{background:var(--accent-soft)}
+  .cmdbox{display:none;border-left:4px solid var(--accent);background:#fbfdfc;padding:14px 18px;
+          border-radius:0 10px 10px 0;margin-top:6px}
+  .cmdbox.show{display:block}
+  /* 测验 */
+  .quiz{border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:14px;background:#fbfdfc}
+  .quiz .q{font-weight:600;margin-bottom:8px}
+  .opt{display:block;padding:8px 12px;border:1px solid var(--line);border-radius:8px;margin:6px 0;cursor:pointer}
+  .opt:hover{background:var(--accent-soft)}
+  .opt.correct{background:#e3f1ec;border-color:var(--accent)}
+  .opt.wrong{background:#fbe3e1;border-color:#c0392b}
+  .ans{font-size:13px;color:var(--muted);margin-top:8px;display:none}
+  .foot{color:var(--muted);font-size:13px;text-align:center;margin-top:30px}
+  .kbd{font-family:ui-monospace,monospace;background:#eef3f1;border-radius:4px;padding:1px 6px;font-size:13px}
+  /* 核心三件套 */
+  .code{background:#0f1f1a;color:#d6f0e6;padding:14px 16px;border-radius:10px;overflow:auto;
+        font-size:12.5px;line-height:1.55;font-family:ui-monospace,Consolas,monospace;margin:10px 0}
+  .code .cm{color:#6fae9c;font-style:italic}
+  .code .kw{color:#ffd28a}
+  .code .fn{color:#8fd3ff}
+  .fblock{border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0;background:#fff}
+  .fblock h4{margin:0 0 6px;font-size:17px}
+  .fblock .role{color:var(--muted);margin:0 0 8px}
+  .flist{margin:6px 0}
+  .flist li{margin:4px 0}
+  .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;color:#fff;margin-right:4px}
+  .tag.m{background:#0F6E56}.tag.g{background:#2b6cb0}.tag.s{background:#b8541f}.tag.p{background:#7a4fb5}.tag.q{background:#6b7780}
+  /* 调用链 */
+  .cfilter{margin:10px 0;display:flex;gap:6px;flex-wrap:wrap}
+  .fbtn{border:1px solid var(--accent);background:#fff;color:var(--accent);border-radius:8px;padding:6px 13px;cursor:pointer;font-size:13px}
+  .fbtn.on{background:var(--accent);color:#fff}
+  .chain{margin-top:6px}
+  .cstep{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;
+         border:2px solid #e2e8e6;margin-bottom:6px;background:#fbfdfc;transition:.15s}
+  .cstep .dot{flex:0 0 28px;height:28px;border-radius:50%;color:#fff;display:flex;align-items:center;
+             justify-content:center;font-size:14px}
+  .cstep .fn{font-family:ui-monospace,Consolas,monospace;font-weight:600;font-size:14px}
+  .cstep .ds{color:var(--muted);font-size:13px;margin-left:auto;text-align:right;max-width:46%}
+  .cstep.dim{opacity:.16}
+  .arrow{text-align:center;color:var(--muted);font-size:13px;margin:-2px 0}
+  @media(max-width:760px){.nav{display:none}.main{margin-left:0;padding:20px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <h1>Spider8 固件</h1>
+  <div class="sub">小白交互学习指南</div>
+  <a href="#overview">① 总览地图</a>
+  <a href="#modules">② 模块探险</a>
+  <a href="#flow">③ 数据流动画</a>
+  <a href="#graph">④ 调用关系图</a>
+  <a href="#core">⑤ 核心三件套</a>
+  <a href="#lab">⑥ 命令实验室</a>
+  <a href="#cheat">⑦ 速查表</a>
+  <a href="#quiz">⑧ 小白测验</a>
+  <a href="#calib">⑨ 舵机标定</a>
+  <div class="tip">提示：本页是离线网页，不用联网。<br>所有内容都来自 <code>firmware/main</code> 的真实代码。</div>
+</nav>
+
+<div class="main">
+
+<!-- ① 总览 -->
+<section id="overview">
+  <h2>① 总览地图：这套程序是什么？</h2>
+  <p class="lead">把它想象成机器狗的<b>神经系统</b>。你在电脑上打字下命令，它把命令变成 8 路电脉冲，舵机收到就动起来。</p>
+
+  <p><b>一句话定位</b></p>
+  <p>你在外面打字 → <code>console.c</code> 听命令 → <code>motion.c</code> 算目标 → <code>servo.c</code> 翻译成电脉冲 → <code>pca9685.c</code>（或 LEDC）写到硬件 → 8 路舵机动。</p>
+
+  <table>
+    <tr><th>文件</th><th>人体部位</th><th>一句话作用</th></tr>
+    <tr><td><code>main.c</code></td><td>🐣 出生流程</td><td>按正确顺序把各模块"叫醒"</td></tr>
+    <tr><td><code>config.h</code></td><td>🧬 基因/参数表</td><td>几条腿、腿多长、舵机接哪个脚、转多少度算限位</td></tr>
+    <tr><td><code>console.c</code></td><td>👂 耳朵+嘴</td><td>听你打的命令（如 <code>walk 50</code>），也把状态汇报给你</td></tr>
+    <tr><td><code>motion.c</code></td><td>🧠 大脑</td><td>决定"该站/该走/该握手"，定时算出 8 个关节目标角</td></tr>
+    <tr><td><code>gait.c</code></td><td>📐 数学脑</td><td>纯算账：脚要抬到哪 → 髋和膝各转几度</td></tr>
+    <tr><td><code>servo.c</code></td><td>🔌 神经</td><td>把"关节角"翻译成"脉宽"，并加三道保护</td></tr>
+    <tr><td><code>pca9685.c</code></td><td>💪 肌肉接口</td><td>I²C 扩展板，把电脉冲送到舵机线（当前后端）</td></tr>
+  </table>
+
+  <p><b>两个"实时循环"</b>（FreeRTOS 任务，每 20 毫秒各转一次）：</p>
+  <p>
+    <span class="pill">motion_task（大脑·优先级5）</span> 算"8 个关节下一刻该转多少度"<br>
+    <span class="pill">servo_out_task（神经·优先级7·更急）</span> 从队列拿最新目标，写到舵机
+  </p>
+  <p>它们用一条<b>"只存最新一条"的队列</b>连接。好处：万一大脑卡住，神经仍按"最后一条目标"保持姿势，不会乱抽。</p>
+</section>
+
+<!-- ② 模块探险 -->
+<section id="modules">
+  <h2>② 模块探险：点卡片看详情</h2>
+  <p class="lead">下面 7 张卡对应 7 个文件。点任意一张，下方会展开它的职责、关键函数、以及"它调用谁 / 谁调用它"。</p>
+  <div class="cards" id="cards"></div>
+  <div class="detail" id="detail"></div>
+</section>
+
+<!-- ③ 数据流动画 -->
+<section id="flow">
+  <h2>③ 数据流动画：当你敲下 <code>walk 50</code></h2>
+  <p class="lead">点"下一步"或"自动播放"，看一条命令从你的键盘一路走到舵机的全过程。</p>
+  <div class="controls">
+    <button id="flowPrev" class="ghost">上一步</button>
+    <button id="flowNext">下一步</button>
+    <button id="flowPlay" class="ghost">自动播放</button>
+    <button id="flowReset" class="ghost">重置</button>
+  </div>
+  <div class="flow" id="flow"></div>
+</section>
+
+<!-- ④ 调用关系图 -->
+<section id="graph">
+  <h2>④ 调用关系图：谁叫谁</h2>
+  <p class="lead">点任意节点，高亮它的连线，并在下方显示"它调用谁 / 被谁调用"。</p>
+  <svg id="graphSvg" viewBox="0 0 800 580" width="800" height="580" xmlns="http://www.w3.org/2000/svg" role="img"></svg>
+  <div class="ginfo" id="ginfo">👆 点上面的圆点试试。例如点 <b>motion.c</b>，会看到它调用 <code>gait.c</code> 和队列、被 <code>console.c</code> 调用。</div>
+</section>
+
+<!-- ⑤ 核心三件套 -->
+<section id="core">
+  <h2>⑤ 核心三件套：motion → gait → servo 详解</h2>
+  <p class="lead">这三个文件就是机器狗"会动"的全部秘密。大脑 <code>motion.c</code> 决定每一步要什么角度，数学脑 <code>gait.c</code> 把"脚要去哪"算成"关节转几度"，神经 <code>servo.c</code> 把角度翻译成电脉冲送出去。下面逐个拆开，文末有一张可筛选的函数级调用链。</p>
+
+  <!-- motion.c -->
+  <div class="fblock">
+    <h4>🧠 motion.c —— 大脑（指挥 + 节拍器）</h4>
+    <p class="role">维护三种模式（POSE 姿态 / WALK 步态 / MANUAL 手动），每 20ms 算好 8 个关节角，写进一条"只留最新"的队列。</p>
+    <ul class="flist">
+      <li><span class="tag m">核心</span><code>motion_init()</code>：初始化步态参数，创建长度 1 的队列 <code>s_q</code>（覆盖式，永远只留最新目标）。</li>
+      <li><span class="tag m">核心</span><code>motion_start()</code>：创建两个 FreeRTOS 任务 <code>motion_task</code>（prio 5）和 <code>servo_out_task</code>（prio 7），都用 <code>vTaskDelayUntil</code> 跑 20ms 节拍（不是 <code>vTaskDelay</code>，否则节拍会越跑越慢）。</li>
+      <li><span class="tag m">核心</span><code>motion_tick()</code>：单拍逻辑。WALK→调 <code>gait_output()</code>；POSE→调 <code>pose_compute()</code>；MANUAL→直接复制标定角。再 <code>rate_limit()</code>（每拍每关节最多 11°，550°/s），最后 <code>xQueueOverwrite(s_q)</code>。</li>
+      <li><code>gait_output()</code> → 调 <code>gait_step()</code> 算本拍 8 个角；<code>pose_compute()</code> → 调 <code>gait_solve_static()</code>（蹲/趴/握手/挥手，脚永远解到地面）。</li>
+      <li>对外接口：<code>motion_walk()</code> / <code>motion_pose()</code> / <code>motion_stand()</code> / <code>motion_manual()</code> / <code>motion_set_speed/turn/period/stride/lift/duty()</code>。</li>
+      <li><b>调用谁：</b><code>gait.c</code>（<code>gait_step</code>, <code>gait_solve_static</code>）、<code>servo.h</code>（<code>servo_apply</code>，经队列）<br><b>被谁调用：</b><code>console.c</code>、<code>main.c</code>（init/start）</li>
+    </ul>
+    <pre class="code">static void motion_tick(void) {
+    float raw[J_COUNT];
+    if (s_mode == MODE_WALK) {
+        gait_output(s_tick, raw);        <span class="cm">// 调 gait.c 算本拍角度</span>
+        s_tick++;
+    } else {
+        s_pose_ms += GAIT_TICK_MS;
+        pose_compute(s_pose, s_pose_ms, raw); <span class="cm">// 调 gait.c 解姿态</span>
+    }
+    rate_limit(s_out, raw);              <span class="cm">// 每拍每关节最多 11°（550°/s）</span>
+    xQueueOverwrite(s_q, &amp;tgt);      <span class="cm">// 交给 servo_out_task</span>
+}</pre>
+  </div>
+
+  <!-- gait.c -->
+  <div class="fblock">
+    <h4>📐 gait.c —— 数学脑（纯算账，不碰硬件）</h4>
+    <p class="role">两连杆正/逆运动学。已知"脚的目标位置 (y, z)"，反解"髋转几度、膝转几度"。只依赖 <code>config.h</code> 的腿长常量，绝不碰任何硬件。</p>
+    <ul class="flist">
+      <li><span class="tag g">核心</span><code>gait_step(p, tick, tpc, &amp;out)</code>：按相位表 <code>PATTERN_PHASE</code> 给每条腿算相位；摆动相用余弦缓动抬脚、支撑相线性后移；逐腿调 <code>gait_ik2()</code> 填 <code>out-&gt;hip_deg / knee_deg</code>。</li>
+      <li><span class="tag g">核心</span><code>gait_ik2(y, zdown, &amp;hip, &amp;knee, &amp;clamped)</code>：两连杆逆解（余弦定理），膝角强制取负（统一向后折）。</li>
+      <li><code>gait_solve_static(knee_deg, foot_y, foot_lift, hip[], knee[])</code>：给定屈膝角（决定机身高度），解全部腿。</li>
+      <li><code>gait_hip_for_knee()</code> / <code>gait_height_for_knee()</code>：屈膝角 ↔ 髋角 / 离地高度的解析关系。</li>
+      <li><code>gait_estimate()</code>：仿真一整圈，估算峰值角速度是否超过 MG90S 的 600°/s。</li>
+      <li><b>相位表（真实）：</b>WALK <code>{64,192,0,128}</code>（后腿先动：RL→FL→RR→FR）；TROT/PACE/BOUND 各两条腿同步。</li>
+      <li><b>调用谁：</b>只依赖 <code>config.h</code> 腿长常量<br><b>被谁调用：</b><code>motion.c</code>；<code>servo.c</code> 初始化（站立基准用 <code>gait_hip_for_knee</code> / <code>gait_height_for_knee</code>）</li>
+    </ul>
+    <pre class="code"><span class="cm">// gait_step 内：对每条腿 l</span>
+uint8_t ph = base + PATTERN_PHASE[pattern][l];
+if (ph &lt; swing_end) {                 <span class="cm">// 摆动相：抬脚</span>
+    float s = (1 - cosf(PI*u)) * 0.5f;
+    y    = -stride + 2*stride*s;
+    lift = lift_mm * sinf(PI*u) * sinf(PI*u);
+} else {                               <span class="cm">// 支撑相：脚贴地匀速后移</span>
+    y    = stride - 2*stride*u;
+    lift = 0;
+}
+gait_ik2(y, hip_h - lift, &amp;hip, &amp;knee, &amp;clamped); <span class="cm">// 逆解</span>
+out-&gt;hip_deg[l]  = hip;
+out-&gt;knee_deg[l] = knee;</pre>
+  </div>
+
+  <!-- servo.c -->
+  <div class="fblock">
+    <h4>🔌 servo.c —— 神经（角度→电脉冲 + 三道保护）</h4>
+    <p class="role">把"关节角"翻译成"PWM 脉宽"，再交给后端（LEDC 或 PCA9685）写出。上层完全不知道底下是哪个后端。</p>
+    <ul class="flist">
+      <li><span class="tag s">核心</span><code>servo_init(joint[])</code>：用 <code>gait_hip_for_knee</code> / <code>gait_height_for_knee</code> 算站立基准（髋 19°/膝 -38° = 舵机 90°），读 NVS 标定，调 <code>backend_init()</code>，摆初始姿态。</li>
+      <li><span class="tag s">核心</span><code>servo_apply(joint[], cal_mode)</code>：每拍被 <code>servo_out_task</code> 调用，逐关节过三关再写。</li>
+      <li><code>servo_joint_to_servo(j, a)</code>：关节角 → 舵机角（90° 基准 + dir 镜像 + trim 微调）。</li>
+      <li><code>servo_write_us(j, us)</code> → <code>backend_write_us()</code>：真正写硬件（LEDC 或 PCA9685）。</li>
+      <li><code>servo_raw_us/enter/exit</code>：raw 电气测试通道（冻结正常步态）；<code>servo_save_cal/load_cal</code>：NVS 存 trim/dir。</li>
+      <li><b>三道保护</b>（都在 <code>servo_apply</code> 内）：① 软限位（关节角夹在 lim_min~lim_max）② 电子硬限位（舵机角锁 0~180°）③ 单拍限速（20ms 最多走 12° = 600°/s）。</li>
+      <li><b>调用谁：</b><code>gait.h</code>（站立基准）、<code>backend</code>（pca9685.c / ledc）<br><b>被谁调用：</b><code>servo_out_task</code> 经队列 → <code>servo_apply</code>；<code>console.c</code> 的 raw 模式</li>
+    </ul>
+    <pre class="code"><span class="cm">// servo_apply 内：逐关节过三关</span>
+for (int j = 0; j &lt; J_COUNT; j++) {
+    float a = joint_deg[j];
+    if (!cal_mode) {                       <span class="cm">// ① 软限位</span>
+        if (a &lt; lim_min) a = lim_min;
+        if (a &gt; lim_max) a = lim_max;
+    }
+    float sv = servo_joint_to_servo(j, a); <span class="cm">// 关节角 → 舵机角</span>
+    if (sv &lt; 0)   sv = 0;                 <span class="cm">// ② 电子硬限位</span>
+    if (sv &gt; 180) sv = 180;
+    float d = sv - s_servo[j];             <span class="cm">// ③ 单拍限速 12°（600°/s）</span>
+    if (d &gt; SERVO_MAX_STEP_DEG) sv = s_servo[j] + SERVO_MAX_STEP_DEG;
+    if (d &lt; -SERVO_MAX_STEP_DEG) sv = s_servo[j] - SERVO_MAX_STEP_DEG;
+    servo_write_ch(j, sv);                <span class="cm">// → backend_write_us</span>
+}</pre>
+  </div>
+
+  <!-- 函数级调用链 -->
+  <h3>函数级调用链（点按钮筛选）</h3>
+  <p class="lead">下面把三个文件的函数串成一条链：从 <code>motion_task</code> 算起，经过 <code>gait</code> 算角度，进队列，再到 <code>servo</code> 写硬件。点彩色按钮只看某一个文件参与的环节。</p>
+  <div class="cfilter" id="cfilter"></div>
+  <div class="chain" id="chain"></div>
+</section>
+
+<!-- ⑥ 命令实验室 -->
+<section id="lab">
+  <h2>⑥ 命令实验室：这些命令在干什么</h2>
+  <p class="lead">点一个命令，看它触发哪些模块、做了什么。这些都是串口里能实际敲的。</p>
+  <div class="cmd-row" id="cmdRow"></div>
+  <div class="cmdbox" id="cmdBox"></div>
+</section>
+
+<!-- ⑥ 速查表 -->
+<section id="cheat">
+  <h2>⑦ 速查表：想改东西改哪个文件</h2>
+  <table>
+    <tr><th>你想改的</th><th>去哪改</th></tr>
+    <tr><td>舵机接的引脚</td><td><code>config.h</code> 里的 <code>SERVO_PIN_*</code></td></tr>
+    <tr><td>腿长 / 站立姿态</td><td><code>config.h</code> 里的 <code>GAIT_*</code></td></tr>
+    <tr><td>新增一种步态</td><td><code>gait.c</code> 里的 <code>PATTERN_PHASE</code> 相位表</td></tr>
+    <tr><td>新增一条命令</td><td><code>console.c</code> 里的命令注册处</td></tr>
+    <tr><td>新增一个动作（如作揖）</td><td><code>motion.c</code> 里的 <code>pose_compute()</code></td></tr>
+    <tr><td>切 LEDC / PCA9685 后端</td><td><code>menuconfig</code> → "Spider8 舵机后端"（<code>Kconfig.projbuild</code>）</td></tr>
+    <tr><td>舵机方向反了 / 有偏差</td><td>串口命令 <code>dir</code> / <code>trim</code> / <code>cal</code></td></tr>
+    <tr><td>想直接发固定脉宽测硬件</td><td><code>pwm</code> / <code>pwmscan</code>（raw 模式，冻结正常步态）</td></tr>
+  </table>
+</section>
+
+<!-- ⑦ 测验 -->
+<section id="quiz">
+  <h2>⑧ 小白测验：检查你懂了没</h2>
+  <p class="lead">选一个答案，立刻知道对错。做错了有解析。</p>
+  <div id="quizBox"></div>
+</section>
+
+<!-- ⑨ 舵机标定 -->
+<section id="calib">
+  <h2>⑨ 舵机标定：trim / dir（装配误差怎么补）</h2>
+  <p class="lead">舵机臂很难正好插准，左右脚装法还常常相反。固件用两个参数吸收这两类误差：<b>trim</b>（微调偏移）和 <b>dir</b>（方向镜像）。标定一次存进 NVS，断电不丢。</p>
+
+  <h3>核心公式（servo.c 第 73 行）</h3>
+  <pre class="code">舵机角 = 90° + (关节角 − 基准角) × dir + trim
+
+  90°    舵机机械中点（装配时把臂插在它的 90°）
+  关节角  算法想让该关节转到的角度（髋0=竖直向下；膝0=伸直）
+  基准角  站立时该关节角度：髋 19°、膝 −38°（代码写死，8 路统一）
+  dir    方向镜像：+1 / −1（左右脚装法相反时给一侧设 −1）
+  trim   装配误差微调：−50° ~ +50°（臂没插准时补偿；2026-11-11 由 ±30° 放宽）</pre>
+
+  <div class="fblock">
+    <h4>两个参数对照</h4>
+    <table>
+      <tr><th>你说的现象</th><th>参数</th><th>范围</th><th>命令</th></tr>
+      <tr><td>某只舵机要转到 60°/30° 才是站立位（臂没插准）</td><td><code>trim</code></td><td>−50°~+50°</td><td><code>trim &lt;0-7&gt; &lt;-50..50&gt;</code></td></tr>
+      <tr><td>同命令左前脚前转、右前脚后转（左右镜像）</td><td><code>dir</code></td><td>1 / −1</td><td><code>dir &lt;0-7&gt; &lt;1|-1&gt;</code></td></tr>
+    </table>
+  </div>
+
+  <h3>互动试算：给定关节角，算舵机角</h3>
+  <p class="lead">把右边填好，点"计算"，看 trim/dir 怎么影响最终舵机角。这能帮你理解为什么需要它们。</p>
+  <div class="fblock">
+    <p>
+      关节类型：
+      <select id="calJt">
+        <option value="hip">髋（基准 19°）</option>
+        <option value="knee">膝（基准 −38°）</option>
+      </select>
+      &nbsp; 关节角(°)：<input id="calAng" type="number" value="0" style="width:70px">
+      &nbsp; dir：
+      <select id="calDir"><option value="1">+1</option><option value="-1">−1</option></select>
+      &nbsp; trim(°)：<input id="calTrim" type="number" value="0" style="width:60px">
+      &nbsp; <button onclick="calcServo()">计算</button>
+    </p>
+    <p id="calOut" style="font-size:15px"></p>
+    <p style="font-size:13px;color:var(--muted)">
+      示例预设：
+      <button class="fbtn" onclick="calPreset('hip',0,1,0)">髋 0° dir+1</button>
+      <button class="fbtn" onclick="calPreset('hip',0,-1,0)">右髋镜像 dir−1</button>
+      <button class="fbtn" onclick="calPreset('hip',19,1,-30)">站立需 60°→trim−30</button>
+    </p>
+  </div>
+
+  <h3>标定流程（接上舵机后做）</h3>
+  <div class="flow">
+    <div class="step"><div class="num">1</div><div class="txt"><b>上电看默认</b><br>输 <code>status</code>，确认全部 <code>dir=+1</code>、<code>trim=+0.0°</code>。</div></div>
+    <div class="step"><div class="num">2</div><div class="txt"><b>逐路验方向</b><br><code>cal 0 40</code>（左前髋向前40°）、<code>cal 2 40</code>（右前髋向前40°），肉眼看腿往哪转。</div></div>
+    <div class="step"><div class="num">3</div><div class="txt"><b>转反了设 dir</b><br>哪路转反 → <code>dir &lt;j&gt; -1</code>。</div></div>
+    <div class="step"><div class="num">4</div><div class="txt"><b>物理对正 + trim 补差</b><br>站立姿态下舵机臂明显没在 90° → 先重插臂；剩的小误差用 <code>trim</code> 补（限 ±50°）。</div></div>
+    <div class="step"><div class="num">5</div><div class="txt"><b>保存</b><br>8 路都满意 → <code>save</code>（写进 NVS，断电不丢）。</div></div>
+  </div>
+
+  <div class="fblock" style="border-color:var(--warn)">
+    <h4 style="color:var(--warn)">⚠ 两个坑</h4>
+    <ul class="flist">
+      <li><code>pwm</code> / <code>pwmscan</code> 是"裸脉宽"，<b>绕过 trim/dir</b>（servo.c 的 servo_raw_us 注释写了不走 trim/dir/软限位）。只能验证"线有没有波形"，<b>不能判方向</b>；判方向用 <code>cal</code>。</li>
+      <li>改完 <code>dir</code>/<code>trim</code> <b>必须 <code>save</code></b>，否则断电重启回到默认 +1 / 0，白调。</li>
+    </ul>
+  </div>
+</section>
+
+<p class="foot">Spider8 固件小白学习指南 · 内容对应 <code>firmware/main</code> 真实代码 · 离线可用</p>
+
+</div>
+
+<script>
+/* ===== 单一数据源：模块信息 ===== */
+const MODULES = {
+  main:    {ico:"🐣", nm:"main.c",     rl:"出生流程",
+    duty:"程序入口 app_main()。按正确顺序把各模块\"叫醒\"：先 NVS、舵机后端、步态、动作，再创建两个实时任务（servo_out_task、motion_task），最后启动串口命令行。顺序乱了会初始化失败。",
+    fns:["app_main()"],
+    calls:["servo_init","gait_init","motion_init","console_init"],
+    calledBy:["（芯片上电后自动调用）"],
+    note:"改这里要特别小心顺序，新手通常不用动它。"},
+  config:  {ico:"🧬", nm:"config.h",   rl:"参数表",
+    duty:"集中存放所有常量：8 个舵机的 GPIO 引脚、腿长、站立基准角、软限位、I²C 地址（PCA9685 = 0x40，SDA=8/SCL=9）。几乎所有文件都 #include 它。",
+    fns:["SERVO_PIN_FL_HIP=4","SERVO_PIN_RL_KNEE=16","PCA9685_I2C_ADDR=0x40","GAIT_*（腿长/基准）"],
+    calls:["（无，纯常量）"],
+    calledBy:["所有模块都引用"],
+    note:"想改引脚、腿长、限位，只动这一处就够了。"},
+  console: {ico:"👂", nm:"console.c",  rl:"耳朵+嘴",
+    duty:"串口命令行。听你打的命令并解析，再调用对应模块；也把状态打印回电脑。自带严格的 parse_joint()，防止把 \"foo\" 误当成 0 号通道。",
+    fns:["parse_joint()","cmd_walk()","cmd_pose()","cmd_cal()","cmd_pwm()"],
+    calls:["motion_walk / motion_pose / motion_manual","servo_raw_enter/us/exit","gait_estimate"],
+    calledBy:["你（通过串口）","main.c（启动时注册）"],
+    note:"命令包括：walk / pose / calf / cal / trim / dir / save / status / demo / pwm / pwmscan。"},
+  motion:  {ico:"🧠", nm:"motion.c",   rl:"大脑",
+    duty:"中枢。维护三种模式（走路 WALK / 姿态 POSE / 手动 MANUAL）。每 20ms 算好 8 个关节目标角，写进队列。姿态模式会用 gait.c 反算，保证身子降下时脚仍踩地。",
+    fns:["motion_task()","pose_compute()","motion_walk()","motion_manual()"],
+    calls:["gait_step()","gait_ik2()","servo 队列（xQueueOverwrite）"],
+    calledBy:["console.c","main.c（创建任务）"],
+    note:"MODE_POSE 算站立/蹲/趴/握手/挥手；MODE_WALK 按相位表走。"},
+  gait:    {ico:"📐", nm:"gait.c",     rl:"数学脑",
+    duty:"纯计算，不碰硬件。两连杆正/逆运动学：已知脚的位置，反推髋、膝各转几度；按相位表算每一帧脚的轨迹；估算峰值角速度是否超限。",
+    fns:["gait_ik2()","gait_step()","gait_estimate()"],
+    calls:["config.h 常量","math 库"],
+    calledBy:["motion.c","servo.c（算站立基准）"],
+    note:"相位表 PATTERN_PHASE：波步 {64,192,0,128}（后腿先动，最少 3 足支撑）。"},
+  servo:   {ico:"🔌", nm:"servo.c",    rl:"神经",
+    duty:"把\"关节角\"翻成\"PWM 脉宽\"，再交给后端写出。加三道保护：①软限位 ②电子硬限位(0~180°) ③单拍限速(20ms 最多 12°)。它不直接写硬件，而是隔着一层 backend_write_us。",
+    fns:["servo_init()","servo_out_task()","servo_joint_to_servo()","backend_write_us()"],
+    calls:["backend（LEDC 或 pca9685）","gait.c（站立基准）"],
+    calledBy:["motion.c（经队列）","console.c（raw 模式）"],
+    note:"三道保护是为了狗不会自己掰坏自己。"},
+  pca9685: {ico:"💪", nm:"pca9685.c",  rl:"肌肉接口",
+    duty:"当前选中的输出后端。I²C 初始化并探测 0x40；把脉宽写到 PCA9685 芯片的某个通道，芯片自己生成 PWM 给舵机。写操作带互斥锁，防止并发撕裂。",
+    fns:["pca9685_init()","pca9685_write_us()"],
+    calls:["I2C 驱动"],
+    calledBy:["servo.c 的 backend"],
+    note:"VCC 接 ESP32 的 3V3（电平），V+ 接适配器 5V（动力），两路 GND 都要共地。"}
+};
+const ORDER = ["main","config","console","motion","gait","servo","pca9685"];
+
+/* ===== ② 模块卡片渲染 ===== */
+const cardsEl = document.getElementById("cards");
+const detailEl = document.getElementById("detail");
+ORDER.forEach(key=>{
+  const m = MODULES[key];
+  const d = document.createElement("div");
+  d.className = "card";
+  d.innerHTML = `<div class="ico">${m.ico}</div><div class="nm">${m.nm}</div><div class="rl">${m.rl}</div>`;
+  d.onclick = ()=>showDetail(key);
+  cardsEl.appendChild(d);
+});
+function showDetail(key){
+  const m = MODULES[key];
+  detailEl.className = "detail show";
+  detailEl.innerHTML = `
+    <h4>${m.ico} ${m.nm} —— ${m.rl}</h4>
+    <p>${m.duty}</p>
+    <p><b>关键函数：</b><br>${m.fns.map(f=>`<span class="fn">${f}</span>`).join("")}</p>
+    <p><b>它调用谁：</b><br>${m.calls.map(c=>`<span class="pill">${c}</span>`).join("")}</p>
+    <p><b>谁调用它：</b><br>${m.calledBy.map(c=>`<span class="pill">${c}</span>`).join("")}</p>
+    <p style="color:var(--muted);font-size:13px">💡 ${m.note}</p>`;
+  detailEl.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+/* ===== ③ 数据流动画 ===== */
+const FLOW = [
+  {t:"你打 <code>walk 50</code>", b:"在电脑串口里输入，表示\"以 50 的速度走路\"。<span class='kbd'>console.c</span> 负责接收。"},
+  {t:"<span class='kbd'>console.c</span> 解析命令", b:"parse_joint() 严格校验参数，然后调用 <code>motion_walk(50)</code>，把大脑切到走路模式。"},
+  {t:"<span class='kbd'>motion.c</span> 进入循环", b:"motion_task 每 20ms 跑一次：用 <code>gait_step()</code> 按相位表算出这一帧 8 个关节该转多少度，写进目标队列。"},
+  {t:"<span class='kbd'>gait.c</span> 做数学", b:"gait_step 内部用两连杆逆运动学，把\"脚要抬到哪\"变成\"髋转几度、膝转几度\"。"},
+  {t:"<span class='kbd'>servo.c</span> 取目标", b:"servo_out_task 每 20ms 从队列取最新目标，过三道保护，再用 <code>servo_joint_to_servo</code> 换成舵机角与脉宽。"},
+  {t:"<span class='kbd'>pca9685.c</span> 写硬件", b:"backend_write_us 经 I²C 把脉宽写到 PCA9685 的对应通道，芯片发出 PWM。"},
+  {t:"舵机转动 🐕", b:"8 路舵机按算好的角度同步运动，机器狗就走起来了！"}
+];
+const flowEl = document.getElementById("flow");
+let flowStep = -1;
+function renderFlow(){
+  flowEl.innerHTML = FLOW.map((s,i)=>`
+    <div class="step ${i===flowStep?'on':''}">
+      <div class="num">${i+1}</div>
+      <div class="txt"><b>${s.t}</b><br>${s.b}</div>
+    </div>`).join("");
+}
+function flowGo(n){
+  flowStep = Math.max(0, Math.min(FLOW.length-1, n));
+  renderFlow();
+  flowEl.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+document.getElementById("flowNext").onclick = ()=>flowGo(flowStep+1);
+document.getElementById("flowPrev").onclick = ()=>flowGo(flowStep-1);
+document.getElementById("flowReset").onclick = ()=>{flowStep=-1;renderFlow();};
+let playTimer=null;
+document.getElementById("flowPlay").onclick = ()=>{
+  if(playTimer){clearInterval(playTimer);playTimer=null;return;}
+  flowStep = flowStep<0?0:flowStep;
+  renderFlow();
+  playTimer = setInterval(()=>{
+    if(flowStep>=FLOW.length-1){clearInterval(playTimer);playTimer=null;return;}
+    flowGo(flowStep+1);
+  },1100);
+};
+renderFlow();
+
+/* ===== ④ 调用关系图（SVG） ===== */
+const G = {
+  nodes:{
+    main:    {x:400,y:50, label:"main.c"},
+    console: {x:120,y:190,label:"console.c"},
+    motion:  {x:400,y:210,label:"motion.c"},
+    gait:    {x:690,y:200,label:"gait.c"},
+    servo:   {x:400,y:380,label:"servo.c"},
+    pca:     {x:400,y:520,label:"pca9685.c"},
+    config:  {x:690,y:380,label:"config.h"}
+  },
+  edges:[
+    ["main","console"],["main","motion"],["main","gait"],["main","servo"],
+    ["console","motion"],["console","servo"],["console","gait"],
+    ["motion","gait"],["motion","servo"],
+    ["servo","pca"],["servo","gait"]
+  ]
+};
+const svg = document.getElementById("graphSvg");
+const NS = "http://www.w3.org/2000/svg";
+// 边
+G.edges.forEach((e,i)=>{
+  const a=G.nodes[e[0]], b=G.nodes[e[1]];
+  const ln=document.createElementNS(NS,"line");
+  ln.setAttribute("x1",a.x);ln.setAttribute("y1",a.y);
+  ln.setAttribute("x2",b.x);ln.setAttribute("y2",b.y);
+  ln.setAttribute("class","edge");ln.id="e"+i;
+  // 箭头
+  const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+  svg.appendChild(ln);
+});
+// 节点
+Object.entries(G.nodes).forEach(([k,n])=>{
+  const g=document.createElementNS(NS,"g");
+  g.setAttribute("class","gnode");g.id="n"+k;
+  const c=document.createElementNS(NS,"circle");
+  c.setAttribute("cx",n.x);c.setAttribute("cy",n.y);c.setAttribute("r",24);
+  c.setAttribute("fill","#0F6E56");
+  const t=document.createElementNS(NS,"text");
+  t.setAttribute("x",n.x);t.setAttribute("y",n.y+4);t.setAttribute("text-anchor","middle");
+  t.setAttribute("fill","#fff");t.setAttribute("font-size","11");t.setAttribute("font-weight","600");
+  t.textContent=n.label.replace(".c","").replace(".h","");
+  // 把文字放在圆下方更好读
+  const t2=document.createElementNS(NS,"text");
+  t2.setAttribute("x",n.x);t2.setAttribute("y",n.y+42);t2.setAttribute("text-anchor","middle");
+  t2.setAttribute("fill","#1f2a28");t2.setAttribute("font-size","12");t2.setAttribute("font-weight","700");
+  t2.textContent=n.label;
+  g.appendChild(c);g.appendChild(t);g.appendChild(t2);
+  g.onclick=()=>selectNode(k);
+  svg.appendChild(g);
+});
+function selectNode(k){
+  // 重置
+  document.querySelectorAll(".edge").forEach(e=>e.classList.remove("hot"));
+  Object.keys(G.nodes).forEach(nk=>{
+    document.getElementById("n"+nk).querySelector("circle").setAttribute("fill","#0F6E56");
+    document.getElementById("n"+nk).style.opacity=1;
+  });
+  // 点亮相关边
+  const hot=[];
+  G.edges.forEach((e,i)=>{
+    if(e[0]===k||e[1]===k){document.getElementById("e"+i).classList.add("hot");hot.push(e[0]===k?e[1]:e[0]);}
+  });
+  // 非相关节点变暗
+  Object.keys(G.nodes).forEach(nk=>{
+    if(nk!==k && !hot.includes(nk)){
+      document.getElementById("n"+nk).style.opacity=.25;
+    }
+  });
+  document.getElementById("n"+k).querySelector("circle").setAttribute("fill","#b8541f");
+  // 信息框
+  const m=MODULES[k];
+  document.getElementById("ginfo").innerHTML =
+    `<b style="color:var(--accent)">${m.ico} ${m.nm}</b><br>
+     <b>它调用谁：</b>${m.calls.map(c=>`<span class="pill">${c}</span>`).join("")}<br>
+     <b>谁调用它：</b>${m.calledBy.map(c=>`<span class="pill">${c}</span>`).join("")}`;
+}
+
+/* ===== ⑤ 命令实验室 ===== */
+const CMDS = {
+  "walk 50":{mods:["console.c","motion.c","gait.c","servo.c","pca9685.c"],
+    desc:"让狗以速度 50 走路。console 解析后切到 WALK 模式，motion 每 20ms 用 gait 算角度，servo 经 PCA9685 输出。"},
+  "pose stand":{mods:["console.c","motion.c","gait.c","servo.c"],
+    desc:"回到站立姿态（髋轴离地约 104mm）。POSE 模式用 gait 反算，保证脚踩地。"},
+  "cal 0 24":{mods:["console.c","servo.c"],
+    desc:"MANUAL 手动模式：把 0 号通道（左前髋）朝\"+方向\"点动 24°。标定方向对不对时最爱用。"},
+  "pwm 0 1500":{mods:["console.c","servo.c","pca9685.c"],
+    desc:"raw 模式：冻结正常步态，直接给 0 号通道发 1500µs 脉宽（舵机中位）。舵机没到货时你用它接 LED 测过。"},
+  "pwmscan 0":{mods:["console.c","servo.c","pca9685.c"],
+    desc:"raw 呼吸测试：0 号通道在 1000↔2000µs 之间来回扫，肉眼看 LED/舵机从暗到亮循环。注意：接了真舵机后不要用（会满程扫坏齿轮）。"},
+  "status":{mods:["console.c","servo.c"],
+    desc:"打印 8 路当前关节角、舵机角、脉宽、trim/dir 等，用来确认一切正常。"},
+  "trim 0 -30":{mods:["console.c","servo.c"],
+    desc:"给 0 号通道（左前髋）设微调角 −30°：把\"舵机要转到 60° 才是站立\"这类装配误差补回来。范围 −50°~+50°。"},
+  "dir 2 -1":{mods:["console.c","servo.c"],
+    desc:"把 2 号通道（右前髋）方向翻转：同一关节角命令下，它的物理转动方向与左前髋相反，正好补偿左右脚镜像。"},
+  "save":{mods:["console.c","servo.c"],
+    desc:"把当前 trim/dir 标定写到 NVS（掉电不丢）。标定调好后一定要 save。"}
+};
+const cmdRow=document.getElementById("cmdRow");
+const cmdBox=document.getElementById("cmdBox");
+Object.keys(CMDS).forEach(c=>{
+  const b=document.createElement("span");
+  b.className="cmd";b.textContent=c;b.onclick=()=>{
+    const d=CMDS[c];
+    cmdBox.className="cmdbox show";
+    cmdBox.innerHTML=`<b>${c}</b><br>${d.desc}<br><b>涉及模块：</b>${d.mods.map(m=>`<span class="pill">${m}</span>`).join("")}`;
+  };
+  cmdRow.appendChild(b);
+});
+
+/* ===== ⑦ 测验 ===== */
+const QUIZ=[
+  {q:"想改\"舵机接在哪个引脚\"，应该去哪个文件？",
+   o:["motion.c","config.h","console.c","pca9685.c"], a:1,
+   exp:"config.h 是参数表，所有引脚常量 SERVO_PIN_* 都在那里。"},
+  {q:"当你敲下 walk 50，第一个处理它的是哪个模块？",
+   o:["servo.c","motion.c","console.c","gait.c"], a:2,
+   exp:"console.c 是耳朵+嘴，先听命令、解析，再调 motion.c。"},
+  {q:"servo.c 里\"三道保护\"的目的是？",
+   o:["让狗走更快","防止舵机/齿轮被弄坏","省电","连接 Wi-Fi"], a:1,
+   exp:"软限位+电子硬限位+单拍限速，是为了狗不会自己掰坏自己。"},
+  {q:"当前选中的输出后端（把电脉冲真正送到舵机）是？",
+   o:["LEDC 直连","PCA9685（I²C 扩展板）","蓝牙","USB"], a:1,
+   exp:"你手头有 PCA9685，sdkconfig 已切到它；servo.c 经 backend_write_us 调用 pca9685.c。"},
+  {q:"motion.c 和 servo.c 之间靠什么传数据？",
+   o:["全局变量直接写","一条只存最新一条的队列","屏幕显示","串口"], a:1,
+   exp:"队列用 xQueueOverwrite，大脑卡住时神经仍按最后一条目标保持姿势。"},
+  {q:"舵机臂没插准、需要微调偏移来补，该用哪个命令？",
+   o:["trim","dir","save","cal"], a:0,
+   exp:"trim 是装配误差微调（−50°~+50°）；dir 管左右镜像，cal 是手动点动，save 是把标定存档。"},
+  {q:"左右脚装法相反，同一命令一脚前转、一脚后转，怎么修？",
+   o:["把 dir 设成 −1","调大 trim","用 pwmscan","改 config.h 引脚"], a:0,
+   exp:"dir=−1 让该通道的舵机角随关节角反向变化，正好补偿左右镜像；trim 只管偏移不管方向。"}
+];
+const quizBox=document.getElementById("quizBox");
+QUIZ.forEach((q,i)=>{
+  const d=document.createElement("div");
+  d.className="quiz";
+  let opts=q.o.map((o,j)=>`<div class="opt" data-j="${j}">${o}</div>`).join("");
+  d.innerHTML=`<div class="q">${i+1}. ${q.q}</div>${opts}<div class="ans"></div>`;
+  d.querySelectorAll(".opt").forEach(op=>{
+    op.onclick=()=>{
+      const j=+op.dataset.j;
+      d.querySelectorAll(".opt").forEach(x=>x.classList.remove("correct","wrong"));
+      if(j===q.a){op.classList.add("correct");}
+      else{op.classList.add("wrong");d.querySelectorAll(".opt")[q.a].classList.add("correct");}
+      const ans=d.querySelector(".ans");
+      ans.style.display="block";
+      ans.innerHTML=(j===q.a?"✅ 答对了！":"❌ 正确答案已标绿。")+" "+q.exp;
+    };
+  });
+  quizBox.appendChild(d);
+});
+
+/* ===== ⑤ 核心三件套：函数级调用链 ===== */
+const CHAIN=[
+  {f:"m",ico:"🧠",fn:"motion_task()",                       d:"每 20ms 循环，调 motion_tick()"},
+  {f:"m",ico:"🧠",fn:"motion_tick()",                       d:"按当前模式选 gait_output / pose_compute"},
+  {f:"m",ico:"🧠",fn:"gait_output() → gait_step()",         d:"按相位表算出本拍 8 个关节角"},
+  {f:"g",ico:"📐",fn:"gait_step()",                         d:"对每条腿算相位、抬脚/后移包络"},
+  {f:"g",ico:"📐",fn:"gait_ik2(y, z, &hip, &knee)",        d:"两连杆逆解 → 髋/膝角度"},
+  {f:"q",ico:"🔗",fn:"xQueueOverwrite(s_q)",               d:"只留最新目标，交给 servo_out_task"},
+  {f:"s",ico:"🔌",fn:"servo_out_task()",                    d:"每 20ms 从队列 peek 最新目标"},
+  {f:"s",ico:"🔌",fn:"servo_apply()",                       d:"逐关节过三道保护"},
+  {f:"s",ico:"🔌",fn:"servo_joint_to_servo()→servo_write_us()", d:"关节角 → 舵机角 → 脉宽(µs)"},
+  {f:"p",ico:"💪",fn:"backend_write_us()→pca9685_write_us()",  d:"经 I²C 写芯片，发出 PWM"}
+];
+const FCOLOR={m:"#0F6E56",g:"#2b6cb0",s:"#b8541f",p:"#7a4fb5",q:"#6b7780"};
+const cfilter=document.getElementById("cfilter");
+const chain=document.getElementById("chain");
+const FILTERS=[["all","全部"],["m","🧠 motion"],["g","📐 gait"],["s","🔌 servo"]];
+FILTERS.forEach(([k,label])=>{
+  const b=document.createElement("button");
+  b.className="fbtn"+(k==="all"?" on":"");b.textContent=label;b.dataset.k=k;
+  b.onclick=()=>{
+    document.querySelectorAll("#cfilter .fbtn").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    const cur=b.dataset.k;
+    document.querySelectorAll("#chain .cstep").forEach(st=>{
+      st.classList.toggle("dim", cur!=="all" && st.dataset.f!==cur);
+    });
+  };
+  cfilter.appendChild(b);
+});
+CHAIN.forEach((s,i)=>{
+  const el=document.createElement("div");
+  el.className="cstep";el.dataset.f=s.f;
+  el.innerHTML=`<div class="dot" style="background:${FCOLOR[s.f]}">${s.ico}</div>`+
+                `<div class="fn">${i+1}. ${s.fn}</div>`+
+                `<div class="ds">${s.d}</div>`;
+  chain.appendChild(el);
+  if(i<CHAIN.length-1){
+    const ar=document.createElement("div");
+    ar.className="arrow";ar.textContent="▼";chain.appendChild(ar);
+  }
+});
+
+/* ===== ⑨ 舵机标定：互动试算 ===== */
+function calcServo(){
+  const jt = document.getElementById("calJt").value;
+  const base = jt === "hip" ? 19 : -38;
+  const ang = parseFloat(document.getElementById("calAng").value) || 0;
+  const dir = parseInt(document.getElementById("calDir").value) || 1;
+  const trim = parseFloat(document.getElementById("calTrim").value) || 0;
+  const servo = 90 + (ang - base) * dir + trim;
+  let warn = "";
+  if (servo < 0 || servo > 180) warn = " ⚠ 超出 0~180° 硬限位，会被夹住";
+  document.getElementById("calOut").innerHTML =
+    "基准 " + base + "°，关节角 " + ang + "°，dir " + dir + "，trim " + trim +
+    "° → 舵机角 <b>" + servo.toFixed(1) + "°</b>" + warn;
+}
+function calPreset(jt, ang, dir, trim){
+  document.getElementById("calJt").value = jt;
+  document.getElementById("calAng").value = ang;
+  document.getElementById("calDir").value = String(dir);
+  document.getElementById("calTrim").value = trim;
+  calcServo();
+}
+
+/* ===== 侧边导航高亮 ===== */
+const navLinks=document.querySelectorAll(".nav a");
+const sections=[...document.querySelectorAll("section")];
+window.addEventListener("scroll",()=>{
+  let cur=sections[0].id;
+  sections.forEach(s=>{if(s.getBoundingClientRect().top<120)cur=s.id;});
+  navLinks.forEach(a=>a.classList.toggle("active",a.getAttribute("href")==="#"+cur));
+});
+</script>
+</body>
+</html>

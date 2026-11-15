@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 卡片：与 console.html 的 .card 一致 -->
+    <style name="Sp8.Card" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:background">@drawable/bg_card</item>
+        <item name="android:padding">14dp</item>
+        <item name="android:layout_marginBottom">12dp</item>
+    </style>
+
+    <style name="Sp8.CardTitle" parent="">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/sp8_text</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:layout_marginBottom">10dp</item>
+    </style>
+
+    <style name="Sp8.Muted" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/sp8_muted</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:lineSpacingExtra">2dp</item>
+    </style>
+
+    <!-- 用 TextView 当按钮：避开 AppCompatButton 的主题着色，
+         颜色完全由 drawable 决定，和网页按钮一模一样 -->
+    <style name="Sp8.Btn" parent="">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">46dp</item>
+        <item name="android:layout_columnWeight">1</item>
+        <item name="android:layout_margin">4dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:paddingLeft">6dp</item>
+        <item name="android:paddingRight">6dp</item>
+        <item name="android:maxLines">1</item>
+    </style>
+
+    <style name="Sp8.Btn.Primary" parent="Sp8.Btn">
+        <item name="android:background">@drawable/bg_btn_primary</item>
+        <item name="android:textColor">#FFFFFF</item>
+    </style>
+
+    <style name="Sp8.Btn.Ghost" parent="Sp8.Btn">
+        <item name="android:background">@drawable/bg_btn_ghost</item>
+        <item name="android:textColor">@color/sp8_text</item>
+    </style>
+
+    <style name="Sp8.Btn.Warn" parent="Sp8.Btn">
+        <item name="android:background">@drawable/bg_btn_warn</item>
+        <item name="android:textColor">@color/sp8_warn</item>
+    </style>
+
+    <style name="Sp8.SliderLabel" parent="">
+        <item name="android:layout_width">72dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/sp8_muted</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="Sp8.SliderValue" parent="">
+        <item name="android:layout_width">58dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">end</item>
+        <item name="android:textColor">@color/sp8_accent</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:typeface">monospace</item>
+    </style>
+
+    <style name="Sp8.Chan" parent="">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_columnWeight">1</item>
+        <item name="android:layout_margin">4dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:background">@drawable/bg_chan</item>
+        <item name="android:textColor">@color/sp8_text</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:lineSpacingExtra">1dp</item>
+    </style>
+</resources>

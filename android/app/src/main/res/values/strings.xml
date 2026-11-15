@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Spider8 遥控</string>
+    <string name="calib_title">Spider8 舵机标定</string>
+    <string name="btn_connect">连接 Spider8</string>
+    <string name="btn_disconnect">断开</string>
+    <string name="btn_estop">急 停</string>
+    <string name="btn_send">发送</string>
+    <string name="btn_clear">清空终端</string>
+    <string name="cmd_hint">输入任意串口命令，如 status</string>
+    <string name="log_title">日志 / 板子回显</string>
+    <!-- 兼容旧布局引用（当前页面文案已内联在 XML 里，与 console.html 逐字一致） -->
+    <string name="btn_forward">前进</string>
+    <string name="btn_backward">后退</string>
+    <string name="btn_left">左转</string>
+    <string name="btn_right">右转</string>
+    <string name="btn_stop">急停</string>
+    <string name="btn_stand">站姿</string>
+</resources>

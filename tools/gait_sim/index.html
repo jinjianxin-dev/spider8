@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>四足机器狗 步态仿真</title>
+<style>
+  :root {
+    --bg: #FAFAF7;
+    --card: #FFFFFF;
+    --line: #E4E2DA;
+    --text: #2C2C2A;
+    --muted: #6B6A64;
+    --teal: #0F6E56;
+    --teal-l: #E1F5EE;
+    --amber: #BA7517;
+    --blue: #185FA5;
+    --red: #A32D2D;
+    --purple: #6A4C93;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 20px 24px 36px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  h1 { font-size: 17px; font-weight: 500; margin: 0 0 4px; }
+  h2 { font-size: 13px; font-weight: 500; margin: 0 0 10px; color: var(--muted); }
+  h3 {
+    font-size: 11px; font-weight: 500; margin: 16px 0 10px;
+    color: var(--muted); letter-spacing: .4px;
+    padding-top: 12px; border-top: 1px solid var(--line);
+  }
+  h3:first-of-type { margin-top: 0; padding-top: 0; border-top: none; }
+  .sub { color: var(--muted); font-size: 12px; margin: 0 0 18px; }
+  .wrap { max-width: 1240px; margin: 0 auto; }
+
+  .grid { display: grid; grid-template-columns: minmax(0,1fr) 272px; gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 10px; padding: 14px 16px;
+  }
+  .card + .card { margin-top: 14px; }
+
+  canvas { display: block; width: 100%; border-radius: 6px; }
+  /* 显示高度用 CSS 锁死：canvas 的 width/height attribute 会被
+     fitCanvas 改写成物理像素，不能拿来当布局尺寸 */
+  #scene { height: 460px; cursor: grab; touch-action: none; }
+  #scene:active { cursor: grabbing; }
+  #top   { height: 230px; }
+
+  .metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; background: var(--line);
+             border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-top: 12px; }
+  .metric { background: var(--card); padding: 9px 11px; }
+  .metric .k { font-size: 10px; color: var(--muted); letter-spacing: .3px; }
+  .metric .v { font-size: 17px; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .metric .u { font-size: 10px; color: var(--muted); font-weight: 400; margin-left: 2px; }
+  @media (max-width: 700px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+
+  .ctrl { margin-bottom: 13px; }
+  .ctrl:last-child { margin-bottom: 0; }
+  .ctrl .row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+  .ctrl label { font-size: 12px; }
+  .ctrl .val { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--teal); font-weight: 500; }
+  input[type=range] { width: 100%; accent-color: var(--teal); height: 18px; }
+  select {
+    width: 100%; padding: 5px 7px; font-size: 12px; font-family: inherit;
+    border: 1px solid var(--line); border-radius: 6px; background: var(--card); color: var(--text);
+  }
+  .hint { font-size: 10.5px; color: var(--muted); margin-top: 2px; line-height: 1.45; }
+
+  .btnrow { display: flex; gap: 7px; margin-bottom: 14px; }
+  button {
+    padding: 6px 10px; font-size: 12px; font-family: inherit;
+    border: 1px solid var(--line); background: var(--card); color: var(--text);
+    border-radius: 6px; cursor: pointer;
+  }
+  button:hover { background: #F3F2EC; }
+  button.on { background: var(--teal); color: #fff; border-color: var(--teal); }
+  .btnrow button { flex: 1; }
+
+  .acts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .acts button { padding: 9px 4px; }
+  .acts button.on { background: var(--teal); color: #fff; border-color: var(--teal); }
+  .acts button:disabled { opacity: .38; cursor: default; background: var(--card); }
+
+  .servo { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .servo th {
+    text-align: left; font-size: 10px; font-weight: 500; color: var(--muted);
+    padding: 4px 6px; border-bottom: 1px solid var(--line); letter-spacing: .3px;
+  }
+  .servo td { padding: 4px 6px; border-bottom: 1px solid #F0EEE8; font-size: 12px; }
+  .servo tr:last-child td { border-bottom: none; }
+  .servo .sw { color: var(--amber); }
+  .servo .st { color: var(--teal); }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px; color: var(--muted); margin-top: 8px; }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>四足机器狗 · 步态仿真</h1>
+  <p class="sub">
+    4 腿 × 2 关节，全部在竖直平面内前后摆 + 上下折叠。脚的位置由逆运动学解出 8 个舵机角，
+    支撑相严格贴地 —— 这是 OpenCat 只驱动肩舵机时做不到的。
+  </p>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h2>3D 视图 · 按住拖动旋转，滚轮缩放</h2>
+        <canvas id="scene" data-h="460"></canvas>
+        <div class="legend" id="legend"></div>
+        <div class="metrics">
+          <div class="metric"><div class="k">每周期前进</div><div class="v"><span id="mFwd">–</span><span class="u">mm</span></div></div>
+          <div class="metric"><div class="k">机身起伏</div><div class="v"><span id="mBob">–</span><span class="u">mm</span></div></div>
+          <div class="metric"><div class="k">最大抬脚</div><div class="v"><span id="mLift">–</span><span class="u">mm</span></div></div>
+          <div class="metric"><div class="k">平均速度</div><div class="v"><span id="mSpd">–</span><span class="u">mm/s</span></div></div>
+          <div class="metric"><div class="k">峰值角速度</div><div class="v"><span id="mRate">–</span><span class="u">°/s</span></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>俯视图 · 支撑多边形</h2>
+        <canvas id="top" data-h="230"></canvas>
+        <div class="hint" style="margin-top:8px">
+          绿色虚线是当前着地脚围成的支撑面，重心投影落在里面才不会倒。
+          2 自由度腿的脚只能前后动，俯视图里腿是直上直下的 —— 想横向跨步得加第 3 个关节。
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>动作</h3>
+        <div class="acts">
+          <button id="act-walk">走路</button>
+          <button id="act-stand">站立</button>
+          <button id="act-crouch">蹲下</button>
+          <button id="act-lie">趴下</button>
+          <button id="act-shake">握手</button>
+          <button id="act-wave">挥手</button>
+        </div>
+        <div class="hint" style="margin-top:8px">
+          切换动作有 0.45 秒平滑过渡。握手的腿实际是「抬起 + 前伸」——
+          2 自由度做不出真正横向伸爪。
+        </div>
+
+        <h3>播放</h3>
+        <div class="btnrow">
+          <button id="playBtn" class="on">暂停</button>
+          <button id="resetBtn">归零</button>
+          <button id="camBtn">正视角</button>
+        </div>
+
+        <h3>步态</h3>
+        <select id="pattern"></select>
+        <div class="hint" id="patternHint"></div>
+
+        <h3>参数</h3>
+        <div class="ctrl">
+          <div class="row"><label>周期</label><span class="val"><span id="vPeriod"></span> ms</span></div>
+          <input type="range" id="period" min="600" max="2400" step="50">
+          <div class="hint">一个完整步态循环的时间。MG90S 慢，低于 900ms 容易跟不上。</div>
+        </div>
+
+        <div class="ctrl">
+          <div class="row"><label>摆动相占比</label><span class="val"><span id="vDuty"></span> %</span></div>
+          <input type="range" id="duty" min="15" max="45" step="1">
+          <div class="hint">波步必须 ≤25%，否则会有两条腿同时离地。</div>
+        </div>
+
+        <div class="ctrl">
+          <div class="row"><label>步幅</label><span class="val">±<span id="vStride"></span> mm</span></div>
+          <input type="range" id="stride" min="10" max="34" step="1">
+          <div class="hint">脚相对髋点前后各能走多远。越大越快，但髋角摆幅也越大。</div>
+        </div>
+
+        <div class="ctrl">
+          <div class="row"><label>抬脚高度</label><span class="val"><span id="vLift"></span> mm</span></div>
+          <input type="range" id="lift" min="6" max="28" step="1">
+          <div class="hint">低于 10mm 遇上乐高件公差就会蹭地。</div>
+        </div>
+
+        <div class="ctrl">
+          <div class="row"><label>站立屈膝</label><span class="val"><span id="vKnee"></span> °</span></div>
+          <input type="range" id="knee" min="-60" max="-10" step="1">
+          <div class="hint">越负机身越低、腿越弯。髋角会自动跟着算，保证脚在正下方。</div>
+        </div>
+
+        <div class="ctrl">
+          <div class="row"><label>转向</label><span class="val"><span id="vTurn"></span></span></div>
+          <input type="range" id="turn" min="-100" max="100" step="5">
+          <div class="hint">左右步幅差动。负值左转，正值右转。</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>8 个舵机（90° = 站立位）</h3>
+        <table class="servo">
+          <thead><tr><th>关节</th><th>角度</th><th>状态</th></tr></thead>
+          <tbody id="servoBody"></tbody>
+        </table>
+        <div class="hint" style="margin-top:8px">
+          标定时把舵机全部打到 90° 再装舵机臂，之后固件只需输出这个角度值。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="gait_core.js"></script>
+<script>
+(function () {
+  'use strict';
+  var G = window.DogGait;
+
+  var COLORS = { FL: '#0F6E56', FR: '#185FA5', RL: '#BA7517', RR: '#6A4C93' };
+  var DASH   = { FL: [], FR: [5, 4], RL: [], RR: [5, 4] };
+
+  var par = Object.assign({}, G.DEFAULTS);
+  var state = G.createState();
+  var playing = true;
+  var lastTs = 0;
+  var nowMs = 0;
+  var metrics = null;
+  var curLegs = null;
+
+  /* --------------------------------------------------------------- 动作 */
+  /* kneeOff: 相对"站立屈膝"滑块的偏移；leg/dy/lift: 单腿动作 */
+  var ACTS = {
+    walk:   { label: '走路' },
+    stand:  { label: '站立', kneeOff: 0 },
+    crouch: { label: '蹲下', kneeOff: -22 },
+    lie:    { label: '趴下', kneeOff: -57 },
+    shake:  { label: '握手', kneeOff: 0, leg: 'FR', dy: 22, lift: 34 },
+    wave:   { label: '挥手', kneeOff: 0, leg: 'FR', dy: 20, lift: 30, wave: true },
+  };
+
+  var actName = 'walk';
+  var actStart = 0;
+  var blend = 1;          /* 1 = 纯步态，0 = 纯姿态 */
+  var blendFrom = 1;
+
+  function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+  function smoothstep(t) { return t * t * (3 - 2 * t); }
+
+  function setAction(name, t) {
+    if (!ACTS[name]) return;
+    actName = name;
+    actStart = t;
+    blendFrom = blend;
+    var keys = Object.keys(ACTS);
+    for (var i = 0; i < keys.length; i++) {
+      var el = document.getElementById('act-' + keys[i]);
+      if (el) el.classList.toggle('on', keys[i] === name);
+    }
+  }
+
+  /* 动作姿态：所有腿按同一屈膝角，单腿可加抬升/前伸 */
+  function poseLegs(t) {
+    var cfg = ACTS[actName] || ACTS.walk;
+    var knee = par.standKneeDeg + (cfg.kneeOff || 0);
+    var Hp = G.hipHeightFor(par, knee);
+    var out = [];
+
+    for (var i = 0; i < G.LEGS.length; i++) {
+      var leg = G.LEGS[i];
+      var dy = 0, lift = 0;
+      if (cfg.leg === leg.id) {
+        dy = cfg.dy || 0;
+        lift = cfg.lift || 0;
+        if (cfg.wave) lift += Math.sin((t - actStart) * 0.008) * 9;
+      }
+      var ik = G.ik2(par, dy, Hp - lift);
+      var st = {
+        hipDeg: ik.hipDeg, kneeDeg: ik.kneeDeg,
+        swinging: lift > 3, phase: 0, u: 0, clamped: ik.clamped,
+      };
+      out.push({ leg: leg, st: st, foot: G.footPos(par, leg, st, Hp), hipH: Hp });
+    }
+    return out;
+  }
+
+  /* 步态与动作的混合结果：每帧只算一次，供三个视图共用 */
+  function computeLegs(t) {
+    var phase = (state.t / par.periodMs) % 1;
+    var gait = G.solve(par, phase);
+    var Hg = G.hipHeightOf(par);
+    for (var i = 0; i < gait.length; i++) gait[i].hipH = Hg;
+
+    /* blend 渐变 */
+    var k = clamp((t - actStart) / 450, 0, 1);
+    blend = blendFrom + ((actName === 'walk' ? 1 : 0) - blendFrom) * smoothstep(k);
+
+    if (blend > 0.999) return gait;
+
+    var pose = poseLegs(t);
+    if (blend < 0.001) return pose;
+
+    var out = [];
+    for (var j = 0; j < 4; j++) {
+      var g = gait[j], p = pose[j];
+      var st = {
+        hipDeg: p.st.hipDeg + (g.st.hipDeg - p.st.hipDeg) * blend,
+        kneeDeg: p.st.kneeDeg + (g.st.kneeDeg - p.st.kneeDeg) * blend,
+        swinging: blend > 0.5 ? g.st.swinging : p.st.swinging,
+        phase: g.st.phase, u: g.st.u, clamped: g.st.clamped || p.st.clamped,
+      };
+      var hipH = p.hipH + (g.hipH - p.hipH) * blend;
+      out.push({ leg: g.leg, st: st, foot: G.footPos(par, g.leg, st, hipH), hipH: hipH });
+    }
+    return out;
+  }
+
+  /* ------------------------------------------------------------ 画布工具 */
+  /* 逻辑高度从 data-h 读（CSS 也锁了同样的值）。
+     ⚠ 不能用 height attribute：fitCanvas 会把它改写成物理像素，
+       下一帧再读就翻倍，画布每帧扩大一倍并清空 —— 图形"一闪而过"就是这个。 */
+  function fitCanvas(cv) {
+    var dpr = window.devicePixelRatio || 1;
+    var w = cv.clientWidth;
+    var h = parseInt(cv.dataset.h, 10);
+    if (!h || !w) return null;              /* 布局未就绪时跳过本帧，防 NaN */
+    var pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+    if (cv.width !== pw || cv.height !== ph) {
+      cv.width = pw;
+      cv.height = ph;
+    }
+    var ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx: ctx, w: w, h: h };
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  /* ------------------------------------------------------------ 3D 相机 */
+  var cam = { yaw: -0.62, pitch: 0.30, zoom: 1 };
+  var CAM_HOME = { yaw: -0.62, pitch: 0.30, zoom: 1 };
+
+  /* 返回一个投影函数：输入"相对机身"的 (x, y, z绝对高度)，输出屏幕坐标 + 深度 */
+  function makeProjector(W, H) {
+    var scale = Math.min(W, H * 1.15) / 300 * cam.zoom;
+    var ox = W / 2, oy = H / 2 + 6;
+    var cy = Math.cos(cam.yaw), sy = Math.sin(cam.yaw);
+    var cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+    var targetZ = 68;
+    /* 相机距离要远大于模型尺寸（模型半径约 130mm）。太近时近处地面被
+       透视放大数倍，坐标直接飞出画布 —— 900 是权衡后的值。 */
+    var dist = 900;
+
+    return function (x, yRel, zAbs) {
+      var dz = zAbs - targetZ;
+      var rx = x * cy - yRel * sy;
+      var ry = x * sy + yRel * cy;
+      var up = dz * cp + ry * sp;          /* 屏幕竖直方向 */
+      var depth = ry * cp - dz * sp;       /* 越大越远 */
+      var k = dist / (dist + depth);
+      return { x: ox + rx * k * scale, y: oy - up * k * scale, d: depth };
+    };
+  }
+
+  /* ------------------------------------------------------------ 3D 绘制 */
+  function drawScene(legs) {
+    var o = fitCanvas(document.getElementById('scene'));
+    if (!o) return;
+    var ctx = o.ctx, W = o.w, H = o.h;
+    ctx.clearRect(0, 0, W, H);
+
+    var proj = makeProjector(W, H);
+    var camY = state.body.y;
+    var camZ = state.body.z;
+    var hipH = legs[0] ? legs[0].hipH : G.hipHeightOf(par);
+
+    /* 地面网格（随前进滚动）。范围不能太大：超出视口的点会被透视放大后
+       顶到画布外，±90mm 刚好盖住机身投影 + 一点余量。 */
+    var step = 30, ext = 90;
+    ctx.strokeStyle = '#EAE8E0';
+    ctx.lineWidth = 1;
+    var g0 = Math.floor((camY - ext) / step) * step;
+    for (var gy = g0; gy <= camY + ext; gy += step) {
+      var a = proj(-ext, gy - camY, 0), b = proj(ext, gy - camY, 0);
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    }
+    for (var gx = -ext; gx <= ext; gx += step) {
+      var c = proj(gx, -ext, 0), d = proj(gx, ext, 0);
+      ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.lineTo(d.x, d.y); ctx.stroke();
+    }
+
+    /* 机身盒子 8 个角 */
+    var zb = hipH + camZ, zt = zb + 24;
+    var hw = par.bodyWid / 2, hl = par.bodyLen / 2;
+    var cs = [
+      [-hw, -hl, zb], [hw, -hl, zb], [hw, hl, zb], [-hw, hl, zb],
+      [-hw, -hl, zt], [hw, -hl, zt], [hw, hl, zt], [-hw, hl, zt],
+    ].map(function (p) { return proj(p[0], p[1], p[2]); });
+
+    var FACES = [
+      { idx: [4, 5, 6, 7], fill: '#F5F3EB', stroke: '#CFCBBD' },  /* 顶 */
+      { idx: [3, 2, 6, 7], fill: '#E7E4D9', stroke: '#CFCBBD' },  /* 前 */
+      { idx: [0, 1, 5, 4], fill: '#DCD8CB', stroke: '#CFCBBD' },  /* 后 */
+      { idx: [0, 3, 7, 4], fill: '#E3DFD3', stroke: '#CFCBBD' },  /* 左 */
+      { idx: [1, 2, 6, 5], fill: '#EDEADF', stroke: '#CFCBBD' },  /* 右 */
+      { idx: [0, 1, 2, 3], fill: '#D3CFC0', stroke: '#CFCBBD' },  /* 底 */
+    ];
+
+    var items = [];
+    FACES.forEach(function (fc) {
+      var pts = fc.idx.map(function (i) { return cs[i]; });
+      var dep = 0;
+      for (var i = 0; i < pts.length; i++) dep += pts[i].d;
+      dep /= pts.length;
+      items.push({ d: dep, draw: function () {
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.closePath();
+        ctx.fillStyle = fc.fill;
+        ctx.fill();
+        ctx.strokeStyle = fc.stroke;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      } });
+    });
+
+    legs.forEach(function (o2) {
+      var leg = o2.leg, st = o2.st, f = o2.foot;
+      var col = COLORS[leg.id];
+      var hz = f.hipZ + camZ, kz = f.kneeZ + camZ;
+      var fz = Math.max(0, f.z + camZ);
+      var hp = proj(f.hipX, f.hipY, hz);
+      var kp = proj(f.kneeX, f.kneeY, kz);
+      var fp = proj(f.x, f.y, fz);
+      var dep = (hp.d + kp.d + fp.d) / 3;
+
+      items.push({ d: dep, draw: function () {
+        ctx.setLineDash(DASH[leg.id]);
+        ctx.lineCap = 'round';
+
+        /* 大腿 */
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 5;
+        ctx.beginPath(); ctx.moveTo(hp.x, hp.y); ctx.lineTo(kp.x, kp.y); ctx.stroke();
+        /* 小腿 */
+        ctx.lineWidth = 3.5;
+        ctx.beginPath(); ctx.moveTo(kp.x, kp.y); ctx.lineTo(fp.x, fp.y); ctx.stroke();
+        ctx.setLineDash([]);
+
+        /* 髋关节（实心） */
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.arc(hp.x, hp.y, 4, 0, 6.284); ctx.fill();
+        /* 膝关节（空心） */
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(kp.x, kp.y, 3.4, 0, 6.284); ctx.fill();
+        ctx.strokeStyle = col; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(kp.x, kp.y, 3.4, 0, 6.284); ctx.stroke();
+
+        /* 脚：着地实心，抬起空心 */
+        if (st.swinging) {
+          ctx.strokeStyle = col; ctx.lineWidth = 2.2;
+          ctx.beginPath(); ctx.arc(fp.x, fp.y, 4.6, 0, 6.284); ctx.stroke();
+        } else {
+          ctx.fillStyle = col;
+          ctx.beginPath(); ctx.arc(fp.x, fp.y, 4.8, 0, 6.284); ctx.fill();
+        }
+
+        ctx.fillStyle = col;
+        ctx.font = '10px -apple-system, "Microsoft YaHei", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(leg.id, hp.x, hp.y - 10);
+      } });
+    });
+
+    /* 画家算法：远的先画 */
+    items.sort(function (a, b) { return b.d - a.d; });
+    for (var i = 0; i < items.length; i++) items[i].draw();
+
+    /* 右下角提示 */
+    ctx.fillStyle = '#A8A497';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('拖动旋转 · 滚轮缩放', W - 12, H - 12);
+  }
+
+  /* --------------------------------------------------------------- 俯视图 */
+  function drawTop(legs) {
+    var o = fitCanvas(document.getElementById('top'));
+    if (!o) return;
+    var ctx = o.ctx, W = o.w, H = o.h;
+    ctx.clearRect(0, 0, W, H);
+
+    var scale = Math.min((W - 90) / (par.bodyWid + 2 * par.strideMm + 90),
+                         (H - 40) / (par.bodyLen + 2 * par.strideMm + 40));
+    var cx = W / 2, cy = H / 2;
+    function sx(x) { return cx + x * scale; }
+    function sy(y) { return cy - y * scale; }
+
+    var bl = par.bodyLen * scale, bw = par.bodyWid * scale;
+    ctx.fillStyle = '#F5F3EB';
+    ctx.strokeStyle = '#CFCBBD';
+    ctx.lineWidth = 1.2;
+    roundRect(ctx, cx - bw / 2, cy - bl / 2, bw, bl, 5);
+    ctx.fill(); ctx.stroke();
+
+    var support = legs.filter(function (o2) { return !o2.st.swinging; });
+
+    if (support.length >= 3) {
+      var pts = support.map(function (o2) {
+        return [sx(o2.leg.cx * par.bodyWid), sy(o2.leg.cy * par.bodyLen)];
+      });
+      pts.sort(function (a, b) {
+        return Math.atan2(a[1] - cy, a[0] - cx) - Math.atan2(b[1] - cy, b[0] - cx);
+      });
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(15,110,86,0.07)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(15,110,86,0.28)';
+      ctx.setLineDash([3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    legs.forEach(function (o2) {
+      var leg = o2.leg, st = o2.st, f = o2.foot;
+      var c = COLORS[leg.id];
+      var hx = sx(f.hipX), hy = sy(f.hipY);
+      var fx = sx(f.x), fy = sy(f.y);
+
+      ctx.strokeStyle = c;
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash(DASH[leg.id]);
+      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(fx, fy); ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.arc(hx, hy, 3, 0, 6.284); ctx.fill();
+
+      if (st.swinging) {
+        ctx.strokeStyle = c; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(fx, fy, 5, 0, 6.284); ctx.stroke();
+      } else {
+        ctx.fillStyle = c;
+        ctx.beginPath(); ctx.arc(fx, fy, 5, 0, 6.284); ctx.fill();
+      }
+
+      ctx.fillStyle = c;
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(leg.id, hx, hy - 9);
+    });
+
+    ctx.fillStyle = '#A8A497';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('▲ 前', cx, cy - bl / 2 - 9);
+  }
+
+  /* ------------------------------------------------------------- 舵机表 */
+  var servoLast = -999;
+  function drawServo(t, legs) {
+    if (t - servoLast < 100) return;
+    servoLast = t;
+
+    var hipStand = G.standHipOf(par);
+    var html = '';
+    for (var i = 0; i < legs.length; i++) {
+      var o2 = legs[i], st = o2.st;
+      var hipServo = 90 + (st.hipDeg - hipStand);
+      var kneeServo = 90 + (st.kneeDeg - par.standKneeDeg);
+      html += '<tr>' +
+        '<td><span class="dot" style="background:' + COLORS[o2.leg.id] + '"></span>' + o2.leg.id + ' 髋</td>' +
+        '<td>' + hipServo.toFixed(1) + '°</td>' +
+        '<td class="' + (st.swinging ? 'sw' : 'st') + '">' + (st.swinging ? '摆动' : '支撑') + '</td></tr>' +
+        '<tr>' +
+        '<td><span class="dot" style="background:' + COLORS[o2.leg.id] + '"></span>' + o2.leg.id + ' 膝</td>' +
+        '<td>' + kneeServo.toFixed(1) + '°</td>' +
+        '<td class="' + (st.swinging ? 'sw' : 'st') + '">' + (st.swinging ? '抬起' : '着地') + '</td></tr>';
+    }
+    document.getElementById('servoBody').innerHTML = html;
+  }
+
+  /* -------------------------------------------------------------- 指标 */
+  var metricLast = -999;
+  function recalc(t) {
+    metrics = G.cycleMetrics(par, 480);
+    document.getElementById('mFwd').textContent = metrics.forward.toFixed(1);
+    document.getElementById('mBob').textContent = metrics.bob.toFixed(1);
+    document.getElementById('mLift').textContent = metrics.liftMax.toFixed(1);
+    document.getElementById('mSpd').textContent = metrics.speed.toFixed(0);
+    document.getElementById('mRate').textContent = metrics.maxRate.toFixed(0);
+    document.getElementById('mRate').style.color =
+      metrics.maxRate > G.SERVO_MAX_RATE ? '#A32D2D' : '';
+    document.getElementById('mBob').style.color =
+      metrics.clampN > 0 ? '#A32D2D' : '';
+    metricLast = t || 0;
+  }
+
+  /* --------------------------------------------------------------- 循环 */
+  function frame(ts) {
+    if (!lastTs) lastTs = ts;
+    var dt = Math.min(80, ts - lastTs);
+    lastTs = ts;
+    nowMs = ts;
+
+    if (playing && dt > 0) {
+      if (actName === 'walk') G.step(par, state, dt);   /* 推进相位 + 积分机身 */
+      else state.t += dt;                                /* 动作模式：只走时间 */
+    }
+
+    curLegs = computeLegs(ts);
+    drawScene(curLegs);
+    drawTop(curLegs);
+    drawServo(ts, curLegs);
+    requestAnimationFrame(frame);
+  }
+
+  /* --------------------------------------------------------------- 绑定 */
+  var FIELDS = [
+    { id: 'period', key: 'periodMs', fmt: function (v) { return v; } },
+    { id: 'duty', key: 'dutyPct', fmt: function (v) { return v; } },
+    { id: 'stride', key: 'strideMm', fmt: function (v) { return v; } },
+    { id: 'lift', key: 'liftMm', fmt: function (v) { return v; } },
+    { id: 'knee', key: 'standKneeDeg', fmt: function (v) { return v; } },
+    { id: 'turn', key: 'turn', fmt: function (v) {
+      return v > 0 ? '右转 ' + v : (v < 0 ? '左转 ' + (-v) : '直行');
+    } },
+  ];
+  var VAL_ID = { period: 'vPeriod', duty: 'vDuty', stride: 'vStride', lift: 'vLift', knee: 'vKnee', turn: 'vTurn' };
+
+  function resetState() {
+    state = G.createState();
+    recalc(nowMs);
+  }
+
+  FIELDS.forEach(function (f) {
+    var el = document.getElementById(f.id);
+    el.value = par[f.key];
+    document.getElementById(VAL_ID[f.id]).textContent = f.fmt(par[f.key]);
+    el.addEventListener('input', function () {
+      par[f.key] = parseFloat(el.value);
+      document.getElementById(VAL_ID[f.id]).textContent = f.fmt(par[f.key]);
+      resetState();
+    });
+  });
+
+  /* 动作按钮 */
+  Object.keys(ACTS).forEach(function (k) {
+    var el = document.getElementById('act-' + k);
+    if (!el) return;
+    el.addEventListener('click', function () { setAction(k, nowMs); });
+  });
+
+  /* 步态选择 */
+  var patSel = document.getElementById('pattern');
+  Object.keys(G.PATTERNS).forEach(function (k) {
+    var opt = document.createElement('option');
+    opt.value = k;
+    opt.textContent = G.PATTERNS[k].label;
+    patSel.appendChild(opt);
+  });
+  patSel.value = par.pattern;
+
+  function patternHint() {
+    var t = G.PATTERNS[par.pattern];
+    document.getElementById('patternHint').textContent = '相位偏移：' +
+      Object.keys(t).filter(function (k) { return k !== 'label'; })
+        .map(function (k) { return k + ' ' + t[k]; }).join(' · ');
+  }
+  patternHint();
+
+  patSel.addEventListener('change', function () {
+    par.pattern = patSel.value;
+    patternHint();
+    resetState();
+  });
+
+  /* 播放控制 */
+  var playBtn = document.getElementById('playBtn');
+  playBtn.addEventListener('click', function () {
+    playing = !playing;
+    playBtn.textContent = playing ? '暂停' : '播放';
+    playBtn.classList.toggle('on', playing);
+    lastTs = 0;
+  });
+  document.getElementById('resetBtn').addEventListener('click', resetState);
+  document.getElementById('camBtn').addEventListener('click', function () {
+    cam.yaw = CAM_HOME.yaw; cam.pitch = CAM_HOME.pitch; cam.zoom = CAM_HOME.zoom;
+  });
+
+  /* ---------------------------------------------------------- 3D 拖拽 */
+  var sceneEl = document.getElementById('scene');
+  var drag = null;
+
+  sceneEl.addEventListener('pointerdown', function (e) {
+    drag = { x: e.clientX, y: e.clientY, yaw: cam.yaw, pitch: cam.pitch };
+    if (sceneEl.setPointerCapture && e.pointerId !== undefined) {
+      try { sceneEl.setPointerCapture(e.pointerId); } catch (err) { /* 忽略 */ }
+    }
+    if (e.preventDefault) e.preventDefault();
+  });
+
+  window.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    cam.yaw = drag.yaw + (e.clientX - drag.x) * 0.009;
+    cam.pitch = clamp(drag.pitch + (e.clientY - drag.y) * 0.006, -0.30, 1.45);
+  });
+
+  window.addEventListener('pointerup', function () { drag = null; });
+  window.addEventListener('pointercancel', function () { drag = null; });
+
+  sceneEl.addEventListener('wheel', function (e) {
+    if (e.preventDefault) e.preventDefault();
+    cam.zoom = clamp(cam.zoom * (1 - (e.deltaY > 0 ? 1 : -1) * 0.12), 0.45, 2.6);
+  }, { passive: false });
+
+  /* 图例 */
+  document.getElementById('legend').innerHTML =
+    Object.keys(COLORS).map(function (k) {
+      return '<span><i style="background:' + COLORS[k] + '"></i>' + k + '</span>';
+    }).join('') +
+    '<span style="color:#A8A497">实线=左侧　虚线=右侧　空心=抬脚　实心=着地</span>';
+
+  /* 初始化 */
+  setAction('walk', 0);
+  blend = 1; blendFrom = 1;
+  recalc(0);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

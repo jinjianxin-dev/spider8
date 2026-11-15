@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- 固定浅色：页面里所有卡片、按钮、文字都按 console.html 的浅色配色写死，
+         跟随系统深色模式会出现「浅卡片 + 深色系统默认文字」的混搭。 -->
+    <style name="Theme.Spider8" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/sp8_accent</item>
+        <item name="colorAccent">@color/sp8_accent</item>
+        <item name="android:windowBackground">@color/sp8_bg</item>
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
+        <item name="android:statusBarColor">@color/sp8_bg</item>
+    </style>
+</resources>

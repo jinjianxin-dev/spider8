@@ -1,0 +1,93 @@
+<svg viewBox="0 0 680 670" width="1360" height="1340" role="img" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif">
+<title>Spider8 电源、ESP32-S3 与 8 路舵机接线图（LEDC 直连版 · 放大 2 倍）</title>
+<desc>5V 3A 适配器经 V+ 和 GND 汇流条给 8 个 MG90S 舵机供电，1000 微法电容并联在两条汇流条之间，ESP32-S3 通过 GPIO4、5、6、7、15、16、17、18 输出 PWM 信号，ESP32 的 GND 与舵机地共地。</desc>
+
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+
+<rect x="0" y="0" width="680" height="670" fill="#FFFFFF"/>
+
+<line x1="40" y1="46" x2="60" y2="46" stroke="#E24B4A" stroke-width="2.5"/>
+<text x="66" y="46" dominant-baseline="central" font-size="11" fill="#5F5E5A">5V 红线</text>
+<line x1="150" y1="46" x2="170" y2="46" stroke="#2C2C2A" stroke-width="2.5"/>
+<text x="176" y="46" dominant-baseline="central" font-size="11" fill="#5F5E5A">GND 棕线（共地）</text>
+<line x1="316" y1="46" x2="336" y2="46" stroke="#378ADD" stroke-width="2.5"/>
+<text x="342" y="46" dominant-baseline="central" font-size="11" fill="#5F5E5A">PWM 信号 橙线</text>
+
+<rect x="500" y="64" width="140" height="64" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+<text x="570" y="88" text-anchor="middle" font-size="13" font-weight="500" fill="#2C2C2A">5V / 3A 适配器</text>
+<text x="570" y="106" text-anchor="middle" font-size="11" fill="#5F5E5A">DC 母座转端子排</text>
+
+<line x1="530" y1="128" x2="530" y2="164" stroke="#E24B4A" stroke-width="2"/>
+<line x1="610" y1="128" x2="610" y2="164" stroke="#2C2C2A" stroke-width="2"/>
+<text x="522" y="150" text-anchor="end" dominant-baseline="central" font-size="11" fill="#A32D2D">5V+</text>
+<text x="618" y="150" text-anchor="start" dominant-baseline="central" font-size="11" fill="#2C2C2A">GND</text>
+
+<line x1="530" y1="164" x2="530" y2="614" stroke="#E24B4A" stroke-width="2.5"/>
+<line x1="610" y1="164" x2="610" y2="650" stroke="#2C2C2A" stroke-width="2.5"/>
+
+<rect x="530" y="570" width="80" height="36" rx="4" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+<text x="570" y="588" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#2C2C2A">1000µF 10V</text>
+
+<rect x="40" y="164" width="170" height="406" rx="12" fill="#EAF3DE" stroke="#3B6D11" stroke-width="0.5"/>
+<text x="125" y="192" text-anchor="middle" font-size="14" font-weight="500" fill="#173404">ESP32-S3</text>
+<text x="125" y="210" text-anchor="middle" font-size="11" fill="#3B6D11">N16R8 · USB 接电脑供电</text>
+<text x="58" y="552" dominant-baseline="central" font-size="11" fill="#3B6D11">GND</text>
+
+<polyline points="125,570 125,634 610,634" fill="none" stroke="#2C2C2A" stroke-width="2"/>
+
+<line x1="210" y1="228" x2="288" y2="228" stroke="#378ADD" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="210" y1="273" x2="288" y2="273" stroke="#378ADD" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="210" y1="318" x2="288" y2="318" stroke="#378ADD" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="210" y1="363" x2="288" y2="363" stroke="#378ADD" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="210" y1="408" x2="288" y2="408" stroke="#378ADD" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="210" y1="453" x2="288" y2="453" stroke="#378ADD" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="210" y1="498" x2="288" y2="498" stroke="#378ADD" stroke-width="1.5" marker-end="url(#arrow)"/>
+<line x1="210" y1="543" x2="288" y2="543" stroke="#378ADD" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<text x="200" y="228" text-anchor="end" dominant-baseline="central" font-size="12" fill="#185FA5">GPIO4</text>
+<text x="200" y="273" text-anchor="end" dominant-baseline="central" font-size="12" fill="#185FA5">GPIO5</text>
+<text x="200" y="318" text-anchor="end" dominant-baseline="central" font-size="12" fill="#185FA5">GPIO6</text>
+<text x="200" y="363" text-anchor="end" dominant-baseline="central" font-size="12" fill="#185FA5">GPIO7</text>
+<text x="200" y="408" text-anchor="end" dominant-baseline="central" font-size="12" fill="#185FA5">GPIO15</text>
+<text x="200" y="453" text-anchor="end" dominant-baseline="central" font-size="12" fill="#185FA5">GPIO16</text>
+<text x="200" y="498" text-anchor="end" dominant-baseline="central" font-size="12" fill="#185FA5">GPIO17</text>
+<text x="200" y="543" text-anchor="end" dominant-baseline="central" font-size="12" fill="#185FA5">GPIO18</text>
+
+<rect x="290" y="211" width="150" height="34" rx="6" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+<text x="365" y="228" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#412402">CH0 · 左前 髋</text>
+<rect x="290" y="256" width="150" height="34" rx="6" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+<text x="365" y="273" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#412402">CH1 · 左前 膝</text>
+<rect x="290" y="301" width="150" height="34" rx="6" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+<text x="365" y="318" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#412402">CH2 · 右前 髋</text>
+<rect x="290" y="346" width="150" height="34" rx="6" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+<text x="365" y="363" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#412402">CH3 · 右前 膝</text>
+<rect x="290" y="391" width="150" height="34" rx="6" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+<text x="365" y="408" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#412402">CH4 · 左后 髋</text>
+<rect x="290" y="436" width="150" height="34" rx="6" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+<text x="365" y="453" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#412402">CH5 · 左后 膝</text>
+<rect x="290" y="481" width="150" height="34" rx="6" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+<text x="365" y="498" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#412402">CH6 · 右后 髋</text>
+<rect x="290" y="526" width="150" height="34" rx="6" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+<text x="365" y="543" text-anchor="middle" dominant-baseline="central" font-size="12" fill="#412402">CH7 · 右后 膝</text>
+
+<line x1="440" y1="221" x2="530" y2="221" stroke="#E24B4A" stroke-width="1.5"/>
+<line x1="440" y1="235" x2="610" y2="235" stroke="#2C2C2A" stroke-width="1.5"/>
+<line x1="440" y1="266" x2="530" y2="266" stroke="#E24B4A" stroke-width="1.5"/>
+<line x1="440" y1="280" x2="610" y2="280" stroke="#2C2C2A" stroke-width="1.5"/>
+<line x1="440" y1="311" x2="530" y2="311" stroke="#E24B4A" stroke-width="1.5"/>
+<line x1="440" y1="325" x2="610" y2="325" stroke="#2C2C2A" stroke-width="1.5"/>
+<line x1="440" y1="356" x2="530" y2="356" stroke="#E24B4A" stroke-width="1.5"/>
+<line x1="440" y1="370" x2="610" y2="370" stroke="#2C2C2A" stroke-width="1.5"/>
+<line x1="440" y1="401" x2="530" y2="401" stroke="#E24B4A" stroke-width="1.5"/>
+<line x1="440" y1="415" x2="610" y2="415" stroke="#2C2C2A" stroke-width="1.5"/>
+<line x1="440" y1="446" x2="530" y2="446" stroke="#E24B4A" stroke-width="1.5"/>
+<line x1="440" y1="460" x2="610" y2="460" stroke="#2C2C2A" stroke-width="1.5"/>
+<line x1="440" y1="491" x2="530" y2="491" stroke="#E24B4A" stroke-width="1.5"/>
+<line x1="440" y1="505" x2="610" y2="505" stroke="#2C2C2A" stroke-width="1.5"/>
+<line x1="440" y1="536" x2="530" y2="536" stroke="#E24B4A" stroke-width="1.5"/>
+<line x1="440" y1="550" x2="610" y2="550" stroke="#2C2C2A" stroke-width="1.5"/>
+</svg>

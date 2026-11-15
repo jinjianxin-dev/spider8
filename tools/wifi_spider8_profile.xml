@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!--
+  Windows WiFi 配置文件：机器狗测试热点 spider8
+  用途：当 Windows 已连着家里 5GHz 路由、列表不刷新出 2.4GHz 热点时，
+        可以直接用这条命令切过去（不用等它出现在列表里）：
+            netsh wlan connect name="spider8" ssid="spider8" interface="WLAN"
+        切回家里 WiFi：
+            netsh wlan connect name="TP-LINK_4440" interface="WLAN"
+  导入一次即可：
+            netsh wlan add profile filename="wifi_spider8_profile.xml" user=current
+-->
+<WLANProfile xmlns="http://www.microsoft.com/networking/WLAN/profile/v1">
+    <name>spider8</name>
+    <SSIDConfig>
+        <SSID>
+            <name>spider8</name>
+        </SSID>
+    </SSIDConfig>
+    <connectionType>ESS</connectionType>
+    <connectionMode>manual</connectionMode>
+    <MSM>
+        <security>
+            <authEncryption>
+                <authentication>WPA2PSK</authentication>
+                <encryption>AES</encryption>
+                <useOneX>false</useOneX>
+            </authEncryption>
+            <sharedKey>
+                <keyType>passPhrase</keyType>
+                <protected>false</protected>
+                <keyMaterial>spider888</keyMaterial>
+            </sharedKey>
+        </security>
+    </MSM>
+</WLANProfile>

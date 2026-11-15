@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 与 firmware/main/web/console.html 的 :root 变量逐项对齐 -->
+<resources>
+    <color name="sp8_bg">#F5F7F9</color>
+    <color name="sp8_card">#FFFFFF</color>
+    <color name="sp8_line">#E2E6EC</color>
+    <color name="sp8_text">#1F2329</color>
+    <color name="sp8_muted">#6B7280</color>
+    <color name="sp8_accent">#0F6E56</color>
+    <color name="sp8_accent_soft">#E1F5EE</color>
+    <color name="sp8_accent_pressed">#0A5542</color>
+    <color name="sp8_danger">#D93025</color>
+    <color name="sp8_danger_soft">#FCECEB</color>
+    <color name="sp8_danger_pressed">#A9221A</color>
+    <color name="sp8_warn">#B45309</color>
+    <color name="sp8_warn_soft">#FDF3E3</color>
+    <color name="sp8_term_bg">#F8FAFB</color>
+    <color name="sp8_term_text">#3D4450</color>
+    <color name="sp8_disabled">#CDD4DA</color>
+    <!-- 兼容旧引用 -->
+    <color name="spider8_primary">@color/sp8_accent</color>
+    <color name="spider8_background">@color/sp8_bg</color>
+</resources>

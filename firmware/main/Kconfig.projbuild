@@ -1,0 +1,77 @@
+# Spider8 舵机输出后端（编译期二选一）
+#
+# LEDC      —— 8 个 GPIO 直连舵机信号线（M0-2 原版方案）
+# PCA9685   —— 舵机信号经 I2C 转 PWM 扩展板输出，ESP32 只占 SDA/SCL 两根线
+#
+# 切换方法：idf.py menuconfig → "Spider8 舵机后端"，或直接改 sdkconfig：
+#   CONFIG_SERVO_BACKEND_PCA9685=y
+menu "Spider8 舵机后端"
+
+    choice SERVO_BACKEND
+        prompt "舵机 PWM 输出后端"
+        default SERVO_BACKEND_LEDC
+        help
+            LEDC：ESP32-S3 内部 PWM 外设直驱，14bit（1 份≈1.22µs），
+                  通道 0~7 = GPIO4/5/6/7/15/16/17/18。
+            PCA9685：I2C(0x40) 扩展板 16 路输出，12bit（1 计数≈4.88µs），
+                  舵机插扩展板 0~7 号排针，ESP32 只需 SDA(GPIO8)/SCL(GPIO9)。
+
+        config SERVO_BACKEND_LEDC
+            bool "LEDC 直连（8 路 GPIO）"
+
+        config SERVO_BACKEND_PCA9685
+            bool "PCA9685（I2C 16 路 PWM 扩展板）"
+
+    endchoice
+
+endmenu
+
+# ---------------------------------------------------------------------------
+# 无线测试台：测试期替代 USB 串口线的「无线串口」
+# 与 M3 的 BLE 小程序互不冲突，可同时编译进去。
+# ---------------------------------------------------------------------------
+menu "Spider8 无线测试台"
+
+    config SPIDER8_WIFI_ENABLED
+        bool "启用 Wi-Fi 热点与网页控制台"
+        default y
+        help
+            机器狗自己发出一个 2.4G 热点，手机或电脑连上后用浏览器打开
+            192.168.4.1 就能发串口命令、看 status 回显。
+            网页内嵌在固件里，完全离线可用；有线 USB 串口仍保留。
+            关掉这个选项可以把 Wi-Fi 协议栈从固件里摘掉，省 RAM 和电流。
+
+    config SPIDER8_WIFI_SSID
+        string "热点名称（SSID）"
+        default "spider8"
+        depends on SPIDER8_WIFI_ENABLED
+        help
+            手机 / 电脑的 Wi-Fi 列表里看到的名字，建议 32 字符以内。
+
+    config SPIDER8_WIFI_PASS
+        string "热点密码（WPA2，8~63 位）"
+        default "spider888"
+        depends on SPIDER8_WIFI_ENABLED && !SPIDER8_WIFI_OPEN
+        help
+            第一次连热点时输一次，之后设备会记住。少于 8 位会被 Wi-Fi 驱动拒绝。
+
+    config SPIDER8_WIFI_OPEN
+        bool "开放热点（免密码，不推荐）"
+        default n
+        depends on SPIDER8_WIFI_ENABLED
+        help
+            勾选后任何附近设备都能连上并控制机器狗，只建议在隔离环境里临时使用。
+
+    config SPIDER8_WIFI_CHANNEL
+        int "Wi-Fi 信道（1~13）"
+        range 1 13
+        default 1
+        depends on SPIDER8_WIFI_ENABLED
+
+    config SPIDER8_WIFI_MAX_CONN
+        int "最多允许几台设备同时连"
+        range 1 4
+        default 4
+        depends on SPIDER8_WIFI_ENABLED
+
+endmenu

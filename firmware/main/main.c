@@ -1,19 +1,21 @@
 /*
- * Spider8 - 四足蜘蛛机器人固件
+ * Spider8 - 四足机器狗固件
  *
- * 里程碑 M0-1：工程骨架最小可运行版本
- *  目标：打通「编译 → 烧写 → 串口日志」链路，并验证关键硬件资源
+ * 里程碑 M0-2：舵机驱动 + 校准框架 + 步态引擎
  *
- * 功能：
- *  1. 上电打印系统横幅：应用版本、芯片、Flash、PSRAM、内部 RAM、分区表
- *  2. 1Hz 心跳：GPIO4 电平翻转（接 LED+220Ω 到 GND 可见闪烁）+ 串口日志
+ * 本版本实现（对应 docs/05-M0里程碑.md 的 M0-2 验收项）：
+ *   1. 8 路 LEDC 50Hz PWM，14bit，每关节独立 trim/dir/软限位
+ *   2. 两连杆逆运动学步态引擎（波步/小跑/溜蹄/跳跃）+ 差速转向
+ *   3. 动作状态机：站立 / 蹲下 / 趴下 / 握手 / 挥手
+ *   4. 串口 CLI：pose / walk / trot / cal / trim / status / demo
  *
- * 硬件：ESP32-S3-N16R8（16MB Flash + 8MB Octal PSRAM）
+ * 硬件：ESP32-S3-N16R8（16MB Flash + 8MB Octal PSRAM），8×MG90S
  *
- * 验收标准（对应 docs/02-设计方案.md 里程碑 M0-1）：
- *  - 烧写后串口 115200 可见横幅与心跳日志
- *  - 日志显示 Flash = 16MB、PSRAM = 8192KB（未检测到则打 WARN）
- *  - 分区表输出 ota_0/ota_1/littlefs/coredump 齐全
+ * ── 上电前的装配要求 ──────────────────────────────────────────────
+ * 先把四条腿摆成"站立姿态"（髋轴离地 104.0mm，膝屈 -38°），
+ * 然后把舵机臂装到 90°。这样驱动里的 90° 就等于标准站姿。
+ * 装不精确没关系，用 `cal` 点动 + `trim` 微调 + `save` 存 NVS。
+ * ────────────────────────────────────────────────────────────────
  */
 
 #include <stdio.h>
@@ -21,34 +23,31 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#include "driver/gpio.h"
 #include "esp_app_desc.h"
 #include "esp_chip_info.h"
 #include "esp_flash.h"
 #include "esp_heap_caps.h"
+#include "esp_system.h"
 #include "esp_idf_version.h"
 #include "esp_log.h"
+#include "nvs_flash.h"
 #include "esp_partition.h"
+#include "esp_ota_ops.h"
 #include "sdkconfig.h"
+
+#include "cli_out.h"
+#include "config.h"
+#include "console.h"
+#include "gait.h"
+#include "motion.h"
+#include "servo.h"
+#include "wireless.h"
+#include "ble_ctl.h"
 
 static const char *TAG = "spider8";
 
 /* ------------------------------------------------------------------ */
-/* 配置                                                                */
-/* ------------------------------------------------------------------ */
-
-/* 心跳 GPIO：M0 阶段用 GPIO4（舵机 CH0 同脚位），接 LED 不影响后续开发 */
-#define HEARTBEAT_GPIO        GPIO_NUM_4
-#define HEARTBEAT_STACK_SIZE  2048   /* 字，不是字节：2048*4 = 8KB 栈 */
-#define HEARTBEAT_PRIORITY    2      /* 低优先级，让位给后续的运动任务 */
-#define HEARTBEAT_PERIOD_MS   1000
-
-/* 静态分配任务栈与 TCB（项目规范：运行期禁止动态分配） */
-static StaticTask_t s_heartbeat_tcb;
-static StackType_t  s_heartbeat_stack[HEARTBEAT_STACK_SIZE];
-
-/* ------------------------------------------------------------------ */
-/* 系统信息打印                                                        */
+/* 系统信息                                                            */
 /* ------------------------------------------------------------------ */
 
 static void log_partitions(void)
@@ -80,7 +79,7 @@ static void print_banner(void)
     const uint32_t internal_kb = heap_caps_get_total_size(MALLOC_CAP_INTERNAL) / 1024;
 
     ESP_LOGI(TAG, "==============================================");
-    ESP_LOGI(TAG, "  Spider8 四足蜘蛛机器人");
+    ESP_LOGI(TAG, "  Spider8 四足机器狗");
     ESP_LOGI(TAG, "  固件   : %s v%s (build %s %s)",
              app->project_name, app->version, app->date, app->time);
     ESP_LOGI(TAG, "  ESP-IDF: %s", esp_get_idf_version());
@@ -89,12 +88,19 @@ static void print_banner(void)
     ESP_LOGI(TAG, "  Flash  : %lu MB", (unsigned long)(flash_size / (1024 * 1024)));
     ESP_LOGI(TAG, "  PSRAM  : %lu KB", (unsigned long)psram_kb);
     ESP_LOGI(TAG, "  内部RAM: %lu KB", (unsigned long)internal_kb);
+    /* 诊断「手机一发指令就断」时最有用的一行：区分是掉压/崩溃重启，
+       还是用户手动上电。ESP_RST_BROWNOUT=舵机启动把 5V 拉塌了。 */
+    {
+        esp_reset_reason_t rr = esp_reset_reason();
+        ESP_LOGI(TAG, "  复位原因: %d%s%s", (int)rr,
+                 rr == ESP_RST_BROWNOUT ? "  ← 掉压！舵机启动把 5V 拉塌了，换带载更强的电源" : "",
+                 rr == ESP_RST_PANIC    ? "  ← 软件崩溃（panic），请抓串口回溯" : "");
+    }
     ESP_LOGI(TAG, "  ----------------------------------------------");
     ESP_LOGI(TAG, "  分区表:");
     log_partitions();
     ESP_LOGI(TAG, "==============================================");
 
-    /* 资源体检：与 N16R8 规格不符时明确告警，避免后续踩坑 */
     if (flash_size / (1024 * 1024) < 16) {
         ESP_LOGW(TAG, "Flash 只有 %luMB，预期 16MB（N16R8）——请检查开发板型号",
                  (unsigned long)(flash_size / (1024 * 1024)));
@@ -106,23 +112,42 @@ static void print_banner(void)
 }
 
 /* ------------------------------------------------------------------ */
-/* 心跳任务                                                            */
+/* 运动学自检                                                          */
 /* ------------------------------------------------------------------ */
 
-static void heartbeat_task(void *arg)
+static void kinematics_selftest(void)
 {
-    bool level = false;
-    uint32_t count = 0;
+    static const struct {
+        const char *name;
+        float knee;
+    } poses[] = {
+        { "装配基准", GAIT_STAND_KNEE_DEG },
+        { "站立",     GAIT_DEFAULT_STAND_KNEE_DEG },
+        { "蹲下",     GAIT_DEFAULT_STAND_KNEE_DEG + POSE_CROUCH_DK },
+        { "趴下",     GAIT_DEFAULT_STAND_KNEE_DEG + POSE_LIE_DK },
+    };
 
-    for (;;) {
-        level = !level;
-        ESP_ERROR_CHECK(gpio_set_level(HEARTBEAT_GPIO, level));
-        ESP_LOGI(TAG, "heartbeat #%lu, free heap=%lu, min-free=%lu",
-                 (unsigned long)(++count),
-                 (unsigned long)esp_get_free_heap_size(),
-                 (unsigned long)esp_get_minimum_free_heap_size());
-        vTaskDelay(pdMS_TO_TICKS(HEARTBEAT_PERIOD_MS));
+    ESP_LOGI(TAG, "----------------------------------------------");
+    ESP_LOGI(TAG, "  运动学自检（大腿 %.0fmm + 小腿 %.0fmm）",
+             GAIT_THIGH_MM, GAIT_SHIN_MM);
+
+    for (size_t i = 0; i < sizeof(poses) / sizeof(poses[0]); i++) {
+        const float knee  = poses[i].knee;
+        const float hip   = gait_hip_for_knee(knee);
+        const float h     = gait_height_for_knee(knee);
+        const float s_hip = servo_joint_to_servo(0, hip);
+        const float s_kn  = servo_joint_to_servo(1, knee);
+
+        ESP_LOGI(TAG, "  %s: 髋%6.1f° 膝%7.1f° → 髋轴离地 %5.1fmm | 舵机 %5.1f° / %5.1f°",
+                 poses[i].name, hip, knee, h, s_hip, s_kn);
+
+        const bool ok = (s_hip > 0.0f && s_hip < 180.0f &&
+                         s_kn  > 0.0f && s_kn  < 180.0f);
+        if (!ok) {
+            ESP_LOGE(TAG, "    ✗ 舵机角超出行程，检查机械尺寸/软限位设置");
+        }
     }
+    ESP_LOGI(TAG, "----------------------------------------------");
 }
 
 /* ------------------------------------------------------------------ */
@@ -131,28 +156,55 @@ static void heartbeat_task(void *arg)
 
 void app_main(void)
 {
+    /* 必须最早调用：接管 ESP_LOG → 环形日志，无线网页才能看到启动日志；
+     * 同时建立有线 REPL / 无线 HTTP 共用的命令执行锁。 */
+    ESP_ERROR_CHECK(cli_out_init());
+
     print_banner();
 
-    /* 心跳 GPIO 初始化 */
-    const gpio_config_t io_conf = {
-        .pin_bit_mask = 1ULL << HEARTBEAT_GPIO,
-        .mode         = GPIO_MODE_OUTPUT,
-        .pull_up_en   = GPIO_PULLUP_DISABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type    = GPIO_INTR_DISABLE,
-    };
-    ESP_ERROR_CHECK(gpio_config(&io_conf));
-    ESP_ERROR_CHECK(gpio_set_level(HEARTBEAT_GPIO, 0));
+    /* NVS：标定值存储。首次启动或分区格式变更时擦除重建。 */
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_LOGW(TAG, "NVS 需要重新初始化（%s），擦除中", esp_err_to_name(err));
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(err);
 
-    /* 静态创建心跳任务：栈使用率可后续用 uxTaskGetStackHighWaterMark 验证 */
-    TaskHandle_t handle = xTaskCreateStatic(heartbeat_task, "heartbeat",
-                                            HEARTBEAT_STACK_SIZE, NULL,
-                                            HEARTBEAT_PRIORITY,
-                                            s_heartbeat_stack, &s_heartbeat_tcb);
-    if (handle == NULL) {
-        ESP_LOGE(TAG, "心跳任务创建失败");
-        return;
+    /* 舵机：直接摆到站立姿态上电，避免先回中位再跳过去 */
+    float stand[J_COUNT];
+    motion_stand_angles(stand);
+    ESP_ERROR_CHECK(servo_init(stand));
+
+    kinematics_selftest();
+
+    ESP_ERROR_CHECK(motion_init());
+    ESP_ERROR_CHECK(motion_start());
+
+    if (console_init() != ESP_OK) {
+        ESP_LOGW(TAG, "串口命令行不可用，固件仍会保持站立姿态");
     }
 
-    ESP_LOGI(TAG, "M0-1 骨架启动完成，进入 1Hz 心跳");
+    /* 无线测试台是「加分项」：起不来就退回有线串口，绝不影响运动功能 */
+    if (wireless_init() != ESP_OK) {
+        ESP_LOGW(TAG, "无线测试台启动失败，请插 USB 线用串口命令行继续测试");
+    }
+
+    /* 蓝牙遥控（M3）：NimBLE GATT server，手机 app 通过 BLE 写命令。
+       已修复 IDF 5.5 崩溃根因（漏掉 esp_bt_controller_init/enable），
+       现在与 Wi-Fi 网页控制台、有线串口共用同一套 cli_exec 命令。
+       起不来也只是日志告警，不影响运动 / 网页功能。 */
+    if (ble_ctl_init() != ESP_OK) {
+        ESP_LOGW(TAG, "蓝牙遥控启动失败，请检查 sdkconfig 是否启用 NimBLE；运动与网页控制台不受影响");
+    }
+
+    /* OTA 升级回滚保护：开启 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE 后，
+       新槽首次启动处于「待确认」状态，必须由本函数确认，否则下次重启会
+       自动回退到上一版可正常启动的固件（刷坏也能救回来）。 */
+    esp_err_t ota_valid = esp_ota_mark_app_valid_cancel_rollback();
+    if (ota_valid != ESP_OK) {
+        ESP_LOGD(TAG, "OTA 本槽非待确认状态（正常）: %s", esp_err_to_name(ota_valid));
+    }
+
+    ESP_LOGI(TAG, "M0-2 启动完成。试试: status / demo / walk / pose crouch");
 }

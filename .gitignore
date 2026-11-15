@@ -12,3 +12,33 @@ tools/_*.txt
 
 # IDE
 .vscode/ipch/
+
+# 根目录调试/日志产物（构建日志、串口抓包、OTA 测试、二进制镜像/APK）
+*_log*.txt
+boot_*.txt
+flash_*.txt
+api_*.txt
+net_*.txt
+wifi_*.txt
+wifidiag_*.txt
+net1.json
+ping1.txt
+port_probe.txt
+root1.html
+status1.txt
+status_after_standknee.txt
+dir_flip_test.txt
+trim_read_log.txt
+pcadiag_out.txt
+monitor_capture*.txt
+log_tail_stdout*.txt
+ble_live_log.txt
+spider8_*.bin
+spider8_*.apk
+spider8_console_qr.png
+w1.txt
+w3.txt
+wd_capture.txt
+
+# 内部工作记忆（含设备/调试细节，不进公开仓库）
+.workbuddy/

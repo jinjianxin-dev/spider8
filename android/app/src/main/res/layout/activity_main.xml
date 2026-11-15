@@ -1,0 +1,504 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 与 firmware/main/web/console.html 同色系、同按钮、同命令 -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/sp8_bg"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="14dp">
+
+        <!-- ===== 顶栏 ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Spider8 无线测试台"
+                android:textColor="@color/sp8_text"
+                android:textSize="19sp"
+                android:textStyle="bold" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/tvState"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_badge_off"
+                android:paddingLeft="11dp"
+                android:paddingTop="6dp"
+                android:paddingRight="11dp"
+                android:paddingBottom="6dp"
+                android:text="● 未连接"
+                android:textColor="@color/sp8_danger"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="蓝牙遥控 · 命令与电脑控制台完全一致"
+                android:textColor="@color/sp8_muted"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/btnConnect"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:background="@drawable/bg_btn_primary"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:text="连接 Spider8"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/btnCalib"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_marginLeft="8dp"
+                android:background="@drawable/bg_btn_ghost"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
+                android:text="⚙ 标定"
+                android:textColor="@color/sp8_accent"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- ===== 急停（永远在最上方） ===== -->
+        <TextView
+            android:id="@+id/btnEstop"
+            android:layout_width="match_parent"
+            android:layout_height="62dp"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_btn_danger"
+            android:clickable="true"
+            android:enabled="false"
+            android:focusable="true"
+            android:gravity="center"
+            android:letterSpacing="0.15"
+            android:text="急 停"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            style="@style/Sp8.Muted"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="12dp"
+            android:gravity="center"
+            android:text="任何时刻都能按；蓝牙断开或切到后台，机器狗也会自动站定。" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/bg_tip"
+            android:padding="10dp"
+            android:text="提示：换动作会先站稳再出发，按下后约半秒到一秒半才起步。所有按钮发出的指令与网页控制台逐字相同。"
+            android:textColor="@color/sp8_accent"
+            android:textSize="12sp" />
+
+        <!-- ===== 动作 ===== -->
+        <LinearLayout style="@style/Sp8.Card">
+            <TextView
+                style="@style/Sp8.CardTitle"
+                android:text="动作" />
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="3">
+
+                <TextView
+                    android:id="@+id/btnPoseStand"
+                    style="@style/Sp8.Btn.Primary"
+                    android:enabled="false"
+                    android:text="站立" />
+
+                <TextView
+                    android:id="@+id/btnPoseCrouch"
+                    style="@style/Sp8.Btn.Ghost"
+                    android:enabled="false"
+                    android:text="蹲下" />
+
+                <TextView
+                    android:id="@+id/btnPoseLie"
+                    style="@style/Sp8.Btn.Ghost"
+                    android:enabled="false"
+                    android:text="趴下" />
+
+                <TextView
+                    android:id="@+id/btnPoseShake"
+                    style="@style/Sp8.Btn.Ghost"
+                    android:enabled="false"
+                    android:text="握手" />
+
+                <TextView
+                    android:id="@+id/btnPoseWave"
+                    style="@style/Sp8.Btn.Ghost"
+                    android:enabled="false"
+                    android:text="挥手" />
+
+                <TextView
+                    android:id="@+id/btnDemo"
+                    style="@style/Sp8.Btn.Ghost"
+                    android:enabled="false"
+                    android:text="连续演示" />
+            </GridLayout>
+
+            <TextView
+                style="@style/Sp8.Muted"
+                android:layout_marginTop="6dp"
+                android:text="「连续演示」约 9 秒，期间命令会排队；急停按钮不受影响。" />
+        </LinearLayout>
+
+        <!-- ===== 行走 / 转向 ===== -->
+        <LinearLayout style="@style/Sp8.Card">
+            <TextView
+                style="@style/Sp8.CardTitle"
+                android:text="行走 / 转向" />
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="3">
+
+                <TextView
+                    android:id="@+id/btnWalk"
+                    style="@style/Sp8.Btn.Primary"
+                    android:enabled="false"
+                    android:text="波步前进" />
+
+                <TextView
+                    android:id="@+id/btnTrot"
+                    style="@style/Sp8.Btn.Ghost"
+                    android:enabled="false"
+                    android:text="小跑" />
+
+                <TextView
+                    android:id="@+id/btnBackward"
+                    style="@style/Sp8.Btn.Ghost"
+                    android:enabled="false"
+                    android:text="后退" />
+
+                <TextView
+                    android:id="@+id/btnLeft"
+                    style="@style/Sp8.Btn.Ghost"
+                    android:enabled="false"
+                    android:text="原地左转" />
+
+                <TextView
+                    android:id="@+id/btnRight"
+                    style="@style/Sp8.Btn.Ghost"
+                    android:enabled="false"
+                    android:text="原地右转" />
+
+                <TextView
+                    android:id="@+id/btnStraight"
+                    style="@style/Sp8.Btn.Ghost"
+                    android:enabled="false"
+                    android:text="回正直行" />
+
+                <TextView
+                    android:id="@+id/btnStopWalk"
+                    style="@style/Sp8.Btn.Ghost"
+                    android:layout_columnSpan="3"
+                    android:enabled="false"
+                    android:text="停止站定" />
+            </GridLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/Sp8.SliderLabel"
+                    android:text="速度" />
+
+                <SeekBar
+                    android:id="@+id/seekSpeed"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="100"
+                    android:progress="100"
+                    android:progressTint="@color/sp8_accent"
+                    android:thumbTint="@color/sp8_accent" />
+
+                <TextView
+                    android:id="@+id/tvSpeed"
+                    style="@style/Sp8.SliderValue"
+                    android:text="100%" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/Sp8.SliderLabel"
+                    android:text="转向" />
+
+                <SeekBar
+                    android:id="@+id/seekTurn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="200"
+                    android:progress="100"
+                    android:progressTint="@color/sp8_accent"
+                    android:thumbTint="@color/sp8_accent" />
+
+                <TextView
+                    android:id="@+id/tvTurn"
+                    style="@style/Sp8.SliderValue"
+                    android:text="0" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/bg_notice"
+                android:padding="10dp"
+                android:text="转向滑块是持续偏置，想临时转一下用上面三个按钮。低速时抬脚会跟着步幅一起变小；想走慢请调大下面的「周期」。"
+                android:textColor="@color/sp8_warn"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- ===== 高级参数 ===== -->
+        <LinearLayout style="@style/Sp8.Card">
+            <TextView
+                style="@style/Sp8.CardTitle"
+                android:text="高级参数" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView style="@style/Sp8.SliderLabel" android:text="周期" />
+                <SeekBar
+                    android:id="@+id/seekPeriod"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="44"
+                    android:progress="8"
+                    android:progressTint="@color/sp8_accent"
+                    android:thumbTint="@color/sp8_accent" />
+                <TextView android:id="@+id/tvPeriod" style="@style/Sp8.SliderValue" android:text="1200" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView style="@style/Sp8.SliderLabel" android:text="步幅半幅" />
+                <SeekBar
+                    android:id="@+id/seekStride"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="44"
+                    android:progress="28"
+                    android:progressTint="@color/sp8_accent"
+                    android:thumbTint="@color/sp8_accent" />
+                <TextView android:id="@+id/tvStride" style="@style/Sp8.SliderValue" android:text="22.0" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView style="@style/Sp8.SliderLabel" android:text="抬脚" />
+                <SeekBar
+                    android:id="@+id/seekLift"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="40"
+                    android:progress="16"
+                    android:progressTint="@color/sp8_accent"
+                    android:thumbTint="@color/sp8_accent" />
+                <TextView android:id="@+id/tvLift" style="@style/Sp8.SliderValue" android:text="14.0" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView style="@style/Sp8.SliderLabel" android:text="占空比" />
+                <SeekBar
+                    android:id="@+id/seekDuty"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:max="35"
+                    android:progress="15"
+                    android:progressTint="@color/sp8_accent"
+                    android:thumbTint="@color/sp8_accent" />
+                <TextView android:id="@+id/tvDuty" style="@style/Sp8.SliderValue" android:text="25%" />
+            </LinearLayout>
+
+            <TextView
+                style="@style/Sp8.Muted"
+                android:layout_marginTop="4dp"
+                android:text="滑块松手才发命令；板子里的真实数值可在终端敲 status 查看。" />
+        </LinearLayout>
+
+        <!-- ===== 命令终端 ===== -->
+        <LinearLayout style="@style/Sp8.Card">
+            <TextView
+                style="@style/Sp8.CardTitle"
+                android:text="命令终端" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <EditText
+                    android:id="@+id/etCmd"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_terminal"
+                    android:hint="输入任意串口命令，如 status"
+                    android:imeOptions="actionSend"
+                    android:inputType="text"
+                    android:paddingLeft="12dp"
+                    android:paddingRight="12dp"
+                    android:textColor="@color/sp8_text"
+                    android:textColorHint="@color/sp8_muted"
+                    android:textSize="14sp"
+                    android:typeface="monospace" />
+
+                <TextView
+                    android:id="@+id/btnSend"
+                    android:layout_width="72dp"
+                    android:layout_height="44dp"
+                    android:layout_marginLeft="8dp"
+                    android:background="@drawable/bg_btn_primary"
+                    android:clickable="true"
+                    android:enabled="false"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="发送"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:columnCount="4">
+
+                <TextView android:id="@+id/btnQStatus" style="@style/Sp8.Btn.Ghost" android:enabled="false" android:text="status" />
+                <TextView android:id="@+id/btnQPca" style="@style/Sp8.Btn.Ghost" android:enabled="false" android:text="pcadiag" />
+                <TextView android:id="@+id/btnQPwmOff" style="@style/Sp8.Btn.Ghost" android:enabled="false" android:text="pwm off" />
+                <TextView android:id="@+id/btnQCalOff" style="@style/Sp8.Btn.Ghost" android:enabled="false" android:text="cal off" />
+            </GridLayout>
+
+            <ScrollView
+                android:id="@+id/scrollLog"
+                android:layout_width="match_parent"
+                android:layout_height="190dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_terminal"
+                android:padding="8dp">
+
+                <TextView
+                    android:id="@+id/tvLog"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/sp8_term_text"
+                    android:textIsSelectable="true"
+                    android:textSize="12sp"
+                    android:typeface="monospace" />
+            </ScrollView>
+
+            <TextView
+                android:id="@+id/btnClear"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_btn_ghost"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:text="清空终端"
+                android:textColor="@color/sp8_text"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- ===== 标定入口 ===== -->
+        <LinearLayout style="@style/Sp8.Card">
+            <TextView
+                style="@style/Sp8.CardTitle"
+                android:text="舵机 trim 标定" />
+
+            <TextView
+                style="@style/Sp8.Muted"
+                android:text="装机对零、微调 8 路舵机角度、翻转方向并写入 NVS。需要板子已连上蓝牙；做完记得点「保存」，否则断电会丢失。" />
+
+            <TextView
+                android:id="@+id/btnCalibOpen"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_btn_primary"
+                android:clickable="true"
+                android:enabled="false"
+                android:focusable="true"
+                android:gravity="center"
+                android:text="打开标定页 →"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
