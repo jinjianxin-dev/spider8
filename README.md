@@ -58,14 +58,17 @@ curl -X POST --data-binary @firmware/build/spider8.bin \
 
 ## 安卓 App 构建
 
-`android/` 为 Gradle 工程（AGP 8.7.0 / Kotlin 1.9.24，compileSdk 35）：
+`android/` 为 Gradle 工程（AGP 8.7.0 / Kotlin 1.9.24，compileSdk 35），已内置
+Gradle Wrapper（Gradle 8.9），**无需自行安装 Gradle**：
 
 ```bash
 cd android
-gradle assembleDebug        # 产物：app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleDebug        # Linux / macOS
+gradlew.bat assembleDebug      # Windows
+# 产物：app/build/outputs/apk/debug/app-debug.apk
 ```
 
-可用 Android Studio 打开，或本机 Gradle 命令行构建。App 功能：急停、6 个动作、
+也可用 Android Studio 打开，或本机 Gradle 命令行构建。App 功能：急停、6 个动作、
 7 个行走/转向命令、4 个快捷命令、6 个参数滑块，以及对应 `servo_calib.html`
 的舵机 trim 标定页（需先连上板子蓝牙）。
 
