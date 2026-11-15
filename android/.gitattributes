@@ -1,0 +1,7 @@
+# Gradle Wrapper：脚本必须保持正确行尾，jar 按二进制处理
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+gradle/wrapper/gradle-wrapper.jar binary
+
+# 其余文件按内容自动判定文本/二进制并规范化行尾
+* text=auto
