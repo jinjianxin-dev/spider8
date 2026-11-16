@@ -21,11 +21,22 @@
 #include "freertos/task.h"
 
 #include "esp_log.h"
+#include "sdkconfig.h"
 
 #include "motion.h"
 #include "servo.h"
 
 static const char *TAG = "motion";
+
+/* 语音前端（AFE 连续音频流）全部绑 core0，伺服节拍必须绑 core1，
+ * 否则 20ms 的舵机节奏会被语音任务抢掉，脚会抖甚至绊。
+ * 若将来为兼容 esp-sr 降成单核（CONFIG_FREERTOS_UNICORE），core1 不存在，
+ * 一律回落 core0，避免 xTaskCreatePinnedToCore 触发 assert 无限重启。 */
+#if defined(CONFIG_FREERTOS_UNICORE)
+#define SPIDER8_CORE_MOTION 0
+#else
+#define SPIDER8_CORE_MOTION 1
+#endif
 
 #define SPI_PI          3.14159265358979f
 #define SERVO_TICK_MS   GAIT_TICK_MS
@@ -388,16 +399,18 @@ esp_err_t motion_start(void)
 {
     TaskHandle_t h;
 
-    h = xTaskCreateStatic(servo_out_task, "servo_out", SERVO_TASK_STACK, NULL,
-                          SERVO_TASK_PRIO, s_servo_stack, &s_servo_tcb);
+    h = xTaskCreateStaticPinnedToCore(servo_out_task, "servo_out", SERVO_TASK_STACK, NULL,
+                                      SERVO_TASK_PRIO, s_servo_stack, &s_servo_tcb,
+                                      SPIDER8_CORE_MOTION);
     if (h == NULL) {
         ESP_LOGE(TAG, "servo_out 任务创建失败");
         return ESP_ERR_NO_MEM;
     }
     s_servo_h = h;
 
-    h = xTaskCreateStatic(motion_task, "motion", MOTION_TASK_STACK, NULL,
-                          MOTION_TASK_PRIO, s_motion_stack, &s_motion_tcb);
+    h = xTaskCreateStaticPinnedToCore(motion_task, "motion", MOTION_TASK_STACK, NULL,
+                                      MOTION_TASK_PRIO, s_motion_stack, &s_motion_tcb,
+                                      SPIDER8_CORE_MOTION);
     if (h == NULL) {
         ESP_LOGE(TAG, "motion 任务创建失败");
         return ESP_ERR_NO_MEM;

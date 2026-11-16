@@ -41,8 +41,25 @@ CONFIG_COMPILER_OPTIMIZATION_DEBUG=y
 
 # --- 无线测试台：机器狗自己开热点，网页控制台内嵌在固件里 ---
 # 关掉这一项即可把 Wi-Fi 协议栈整体摘掉（省 RAM / 省电），有线串口不受影响
-CONFIG_SPIDER8_WIFI_ENABLED=y
+# CONFIG_SPIDER8_WIFI_ENABLED is not set
 
 # --- 系统事件任务栈：Wi-Fi 事件回调里要做中文日志 + 连接 + 模式切换，
 # 默认 2304 实测溢出（sys_evt stack overflow），提到 4608 ---
 CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE=4608
+
+# --- 语音前端 esp-sr（I1 合壳，配置已在 E:\spider8_i0_probe 编译验证）---
+# 只留一个唤醒词「你好小智」+ 中文 MultiNet7 量化版，其余模型全关，
+# srmodels.bin 实测 2.9 MB，落在 0x800000 的 model 分区（3.5 MB）。
+# 这些项必须写进 defaults：将来删掉 sdkconfig 重建时，Kconfig 默认值
+# 会打开一堆用不到的模型，把模型分区撑爆。
+CONFIG_MODEL_IN_FLASH=y
+# CONFIG_MODEL_IN_SDCARD is not set
+CONFIG_AFE_INTERFACE_V1=y
+CONFIG_SR_NSN_WEBRTC=y
+CONFIG_SR_VADN_WEBRTC=y
+CONFIG_SR_WN_WN9_NIHAOXIAOZHI_TTS=y
+CONFIG_SR_MN_CN_MULTINET7_QUANT=y
+CONFIG_SR_MN_EN_NONE=y
+# CONFIG_SR_MN_CN_NONE is not set
+# 应急开关：设 n 可让 app_main 不启动语音前端，退回纯蓝牙/串口遥控
+CONFIG_SPIDER8_VOICE_ENABLED=y

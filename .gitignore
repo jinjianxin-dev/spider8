@@ -9,6 +9,9 @@ firmware/dependencies.lock
 tools/_*.txt
 *.log
 ~$*
+__pycache__/
+*.pyc
+wrapper_gen.txt
 
 # IDE
 .vscode/ipch/

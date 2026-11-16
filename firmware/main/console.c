@@ -24,6 +24,7 @@
 #include "pca9685.h"
 #include "servo.h"
 #include "wireless.h"
+#include "voice.h"
 
 static const char *TAG = "cli";
 
@@ -615,12 +616,42 @@ static int cmd_status(int argc, char **argv)
 
     uint32_t mh = 0, sh = 0;
     motion_diag(&mh, &sh);
-    cli_out("\n堆 free=%lu min=%lu\n",
+    cli_out("\n堆 free=%lu min=%lu（含 PSRAM，不能用来判断语音能否共存）\n",
            (unsigned long)esp_get_free_heap_size(),
            (unsigned long)esp_get_minimum_free_heap_size());
+    /* I0 语音集成体检：esp-sr 的 AFE / WakeNet / MultiNet 只能吃片内 SRAM，
+     * 外挂 PSRAM 再大也不算。这里把两者分开列，避免再被 8.5MB 误导。 */
+    cli_out("片内SRAM free=%lu min=%lu 最大连续块=%lu\n",
+           (unsigned long)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+           (unsigned long)heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL),
+           (unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
+    cli_out("PSRAM free=%lu min=%lu\n",
+           (unsigned long)heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
+           (unsigned long)heap_caps_get_minimum_free_size(MALLOC_CAP_SPIRAM));
     cli_out("栈余量(字) motion=%lu servo_out=%lu\n",
            (unsigned long)mh, (unsigned long)sh);
     cli_out("运行 %lus\n", (unsigned long)(esp_log_timestamp() / 1000));
+    return 0;
+}
+
+/* I0 语音集成体检：一条能在「关掉 Wi-Fi、只有串口/BLE」时读到的短命令。
+ * status 的 8 路表近千字节，BLE 严格单包收不全；meminfo 固定一行 <120B，
+ * 手机 App 命令框、BLE 写特征、语音模拟通道都能直接读回。 */
+static int cmd_meminfo(int argc, char **argv)
+{
+    (void)argc; (void)argv;
+#ifdef CONFIG_SPIDER8_WIFI_ENABLED
+    const char *wifi = "开";
+#else
+    const char *wifi = "关";
+#endif
+    cli_out("MEM 片内free=%lu min=%lu 最大块=%lu | PSRAMfree=%lu min=%lu | WiFi=%s\n",
+            (unsigned long)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+            (unsigned long)heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL),
+            (unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL),
+            (unsigned long)heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
+            (unsigned long)heap_caps_get_minimum_free_size(MALLOC_CAP_SPIRAM),
+            wifi);
     return 0;
 }
 
@@ -676,6 +707,10 @@ static void register_all(void)
         { .command = "pwmscan",.help = "电气验证：呼吸扫描脉宽",   .hint = "<0-7|all>", .func = cmd_pwmscan },
         { .command = "pcadiag",.help = "读回 PCA9685 寄存器诊断输出", .func = cmd_pcadiag },
         { .command = "status", .help = "打印当前状态",           .func = cmd_status },
+        { .command = "meminfo",.help = "内存体检：片内SRAM/PSRAM 余量（语音集成 I0）", .func = cmd_meminfo },
+        { .command = "voice",  .help = "语音前端：状态/词表/识别开关/动作放行/模拟播报",
+          .hint = "[status|list|on|off|exec on|off|mute on|off|sim <1-25>|say <0-22>|gain <12-20>]",
+          .func = voice_cli },
         { .command = "wifidiag", .help = "无线诊断：热点状态 + 开机日志", .func = cmd_wifidiag },
         { .command = "wificlear", .help = "清除家里WiFi配网，重启回纯热点", .func = cmd_wificlear },
         { .command = "wifiset", .help = "串口直接写家里WiFi并重启",

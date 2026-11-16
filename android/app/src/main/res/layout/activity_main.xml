@@ -111,9 +111,65 @@
         <TextView
             style="@style/Sp8.Muted"
             android:layout_marginTop="6dp"
-            android:layout_marginBottom="12dp"
             android:gravity="center"
             android:text="任何时刻都能按；蓝牙断开或切到后台，机器狗也会自动站定。" />
+
+        <!-- ===== 语音动作开关（上电默认放行，放地上前必须关） ===== -->
+        <LinearLayout style="@style/Sp8.Card">
+
+            <TextView
+                style="@style/Sp8.CardTitle"
+                android:text="语音控制 · 安全开关" />
+
+            <TextView
+                style="@style/Sp8.Muted"
+                android:text="固件上电默认放行：喊「前进」就会走。把狗放到地上、搬动或收纳前，请先关闭语音动作；重启后会自动恢复放行。" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/btnVoiceExec"
+                    android:layout_width="0dp"
+                    android:layout_height="46dp"
+                    android:layout_weight="1"
+                    android:layout_margin="4dp"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:enabled="false"
+                    android:maxLines="1"
+                    android:background="@drawable/bg_btn_warn"
+                    android:textColor="@color/sp8_warn"
+                    android:textSize="14sp"
+                    android:text="关闭语音动作" />
+
+                <TextView
+                    android:id="@+id/btnVoiceStatus"
+                    android:layout_width="0dp"
+                    android:layout_height="46dp"
+                    android:layout_weight="1"
+                    android:layout_margin="4dp"
+                    android:gravity="center"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:enabled="false"
+                    android:maxLines="1"
+                    android:background="@drawable/bg_btn_ghost"
+                    android:textColor="@color/sp8_text"
+                    android:textSize="14sp"
+                    android:text="查询状态" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvVoiceState"
+                style="@style/Sp8.Muted"
+                android:layout_marginTop="6dp"
+                android:text="语音动作：未知（连上后自动读取，或点「查询状态」）" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
@@ -206,7 +262,7 @@
                     android:id="@+id/btnBackward"
                     style="@style/Sp8.Btn.Ghost"
                     android:enabled="false"
-                    android:text="后退" />
+                    android:text="后退（未开放）" />
 
                 <TextView
                     android:id="@+id/btnLeft"
@@ -233,6 +289,11 @@
                     android:enabled="false"
                     android:text="停止站定" />
             </GridLayout>
+
+            <TextView
+                style="@style/Sp8.Muted"
+                android:layout_marginTop="6dp"
+                android:text="「后退」暂未开放：现有步态层会把负速度当成继续前进，按下反而会往前走，已禁用。" />
 
             <LinearLayout
                 android:layout_width="match_parent"

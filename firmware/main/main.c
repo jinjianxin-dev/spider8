@@ -43,6 +43,7 @@
 #include "servo.h"
 #include "wireless.h"
 #include "ble_ctl.h"
+#include "voice.h"
 
 static const char *TAG = "spider8";
 
@@ -197,6 +198,16 @@ void app_main(void)
     if (ble_ctl_init() != ESP_OK) {
         ESP_LOGW(TAG, "蓝牙遥控启动失败，请检查 sdkconfig 是否启用 NimBLE；运动与网页控制台不受影响");
     }
+
+#ifdef CONFIG_SPIDER8_VOICE_ENABLED
+    /* 语音前端（I1）：放在所有既有功能之后启动，起不来也只是没耳朵，
+     * 不影响站立、串口、蓝牙。语音任务全绑 core0，伺服在 core1。 */
+    if (voice_init() != ESP_OK) {
+        ESP_LOGW(TAG, "语音前端启动失败：检查 model 分区(0x800000)是否已烧 srmodels.bin、片内内存是否够");
+    }
+#else
+    ESP_LOGI(TAG, "语音前端已用 CONFIG_SPIDER8_VOICE_ENABLED=n 编译关闭");
+#endif
 
     /* OTA 升级回滚保护：开启 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE 后，
        新槽首次启动处于「待确认」状态，必须由本函数确认，否则下次重启会

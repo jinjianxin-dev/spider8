@@ -33,6 +33,7 @@
 #ifdef CONFIG_SPIDER8_WIFI_ENABLED
 
 #include "esp_event.h"
+#include "esp_heap_caps.h"   /* I0：片内 SRAM 计量，见 /api/status */
 #include "esp_netif.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
@@ -373,7 +374,11 @@ static esp_err_t h_status(httpd_req_t *req)
         "{\"mode\":\"%s\",\"pose\":\"%s\",\"gait\":\"%s\",\"trans\":\"%s\","
         "\"period\":%u,\"duty\":%d,\"stride\":%.1f,\"lift\":%.1f,"
         "\"speed\":%d,\"turn\":%d,\"hold\":%u,\"rate\":%.0f,\"clamp\":%lu,"
-        "\"heap\":%lu,\"heap_min\":%lu,\"uptime\":%lu,"
+        "\"heap\":%lu,\"heap_min\":%lu,"
+        /* I0 语音集成体检：heap/heap_min 是「含 PSRAM 的总堆」，
+           esp-sr 的 AFE 只吃片内 SRAM，必须单独量 int_*。 */
+        "\"int_free\":%lu,\"int_min\":%lu,\"int_largest\":%lu,"
+        "\"psram_free\":%lu,\"psram_min\":%lu,\"uptime\":%lu,"
         "\"clients\":%d,\"hb\":%lu,\"wd\":%d,\"ota\":%d,"
         "\"rst\":%d,\"brownout\":%d}",
         motion_mode_name(), motion_pose_name(motion_current_pose()),
@@ -385,6 +390,11 @@ static esp_err_t h_status(httpd_req_t *req)
         (unsigned long)servo_clamp_count(),
         (unsigned long)esp_get_free_heap_size(),
         (unsigned long)esp_get_minimum_free_heap_size(),
+        (unsigned long)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+        (unsigned long)heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL),
+        (unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL),
+        (unsigned long)heap_caps_get_free_size(MALLOC_CAP_SPIRAM),
+        (unsigned long)heap_caps_get_minimum_free_size(MALLOC_CAP_SPIRAM),
         (unsigned long)(esp_log_timestamp() / 1000),
         (int)s_sta_count, (unsigned long)dt_ms, s_wd_armed ? 1 : 0, (int)s_ota_in_progress,
         /* 上次复位原因：诊断「手机一发指令就断、随后自动连上」是否是板子

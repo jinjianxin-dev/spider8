@@ -1,0 +1,5 @@
+# I0 探针：把语音侧已验证的 esp-sr 组件挂进机器狗工程。
+# 版本约束与 voice-llm 一致（^2.4.2 在本机解析为 2.6.0，见 dependencies.lock）。
+dependencies:
+  idf: ">=5.3"
+  espressif/esp-sr: "^2.4.2"
