@@ -82,7 +82,7 @@ typedef struct {
 } voice_cmd_t;
 
 static const voice_cmd_t k_cmds[] = {
-    { 1,  "前进",   "qian jin",       "walk 50"       },
+    { 1,  "前进",   "qian jin",       "walk 100"      }, /* 11-16 用户要求满速；原 50 为保守值 */
     /* 后退：方案原写 "walk -50"，实测无效 —— execute_pending() 里
      * `if (s_req_speed >= 0) motion_set_speed(...)`，且 motion_set_speed()
      * 把负值夹成 0，负速度会退化成「按当前速度前进」，是危险的错误动作。

@@ -77,7 +77,7 @@ App 功能：急停、**语音动作 开/关（安全开关）**、6 个姿态�
 | 通道 | 说明 |
 |---|---|
 | **语音（默认）** | 说「你好小智」→ 等「我在」播完 + 半秒 → 说命令词（8 秒窗口）。25 条固定词，含「停」急停直通、5 秒行走自动站定 |
-| **蓝牙** | 手机连广播名 `Spider8`，GATT 写命令；命令与串口完全一致（`walk 50`、`pose stand`、`status`、`voice`、`trimget 0`…） |
+| **蓝牙** | 手机连广播名 `Spider8`，GATT 写命令；命令与串口完全一致（`walk 100`、`pose stand`、`status`、`voice`、`trimget 0`…） |
 | Wi-Fi 网页 | **当前固件已关闭**；开启需 `CONFIG_SPIDER8_WIFI_ENABLED=y` 重编，且要重测片内 SRAM（esp-sr 的 AFE 吃片内内存） |
 | 串口 | USB Serial/JTAG，115200，命令同上 |
 
